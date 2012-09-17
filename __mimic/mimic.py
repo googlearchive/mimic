@@ -265,10 +265,7 @@ def GetProjectName():
   # 'project-name-dot-your-app-id.appspot.com' or
   # 'project-name.your-app-id.appspot.com'
 
-  if 'SERVER_NAME' not in os.environ:
-    return ''
   server_name = os.environ['SERVER_NAME']
-
   # use a consistent delimiter
   server_name = server_name.replace('-dot-', '.')
 
