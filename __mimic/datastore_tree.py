@@ -51,7 +51,7 @@ class DatastoreTree(common.Tree):
     self.root = ndb.Key(_AhMimicFile, '/', namespace=namespace)
 
   def __repr__(self):
-    return '<{0} root={1}>'.format(__name__, self.root)
+    return '<{0} root={1}>'.format(self.__class__.__name__, self.root)
 
   @staticmethod
   def _NormalizeDirectoryPath(path):
