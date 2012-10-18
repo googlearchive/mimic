@@ -209,14 +209,14 @@ class MimicTest(unittest.TestCase):
   def tearDown(self):
     pass
 
-  def _CreateTree(self, project_name):
-    tree = datastore_tree.DatastoreTree(project_name)
+  def _CreateTree(self, project_id):
+    tree = datastore_tree.DatastoreTree(project_id)
     for path, contents in self._files.items():
       tree.SetFile(path, contents)
     return tree
 
   def _CallMimic(self, path,
-                 http_host='project-name.your-app-id.appspot.com',
+                 http_host='project-id.your-app-id.appspot.com',
                  os_environ=None):
     # TODO: at some point we might need to expand the set of environ
     # variables set, support POST, etc.  For now this is enough to test what
@@ -458,72 +458,72 @@ class MimicTest(unittest.TestCase):
 
   def checkHostParseFailure(self, server_name):
     os.environ['SERVER_NAME'] = server_name
-    project_name = mimic.GetProjectNameFromServerName()
-    self.assertEquals('', project_name)
+    project_id = mimic.GetProjectIdFromServerName()
+    self.assertEquals('', project_id)
 
-  def testGetProjectNameFromServerNameAppspot(self):
-    os.environ['SERVER_NAME'] = 'project-name.your-app-id.appspot.com'
-    project_name = mimic.GetProjectNameFromServerName()
-    self.assertEquals('project-name', project_name)
+  def testGetProjectIdFromServerNameAppspot(self):
+    os.environ['SERVER_NAME'] = 'project-id.your-app-id.appspot.com'
+    project_id = mimic.GetProjectIdFromServerName()
+    self.assertEquals('project-id', project_id)
 
-    # Must have project name subdomain
+    # Must have project id subdomain
     self.checkHostParseFailure('your-app-id.appspot.com')
 
-  def testGetProjectNameFromServerNameAppspotDashDotDash(self):
-    os.environ['SERVER_NAME'] = 'project-name-dot-your-app-id.appspot.com'
-    project_name = mimic.GetProjectNameFromServerName()
-    self.assertEquals('project-name', project_name)
+  def testGetProjectIdFromServerNameAppspotDashDotDash(self):
+    os.environ['SERVER_NAME'] = 'project-id-dot-your-app-id.appspot.com'
+    project_id = mimic.GetProjectIdFromServerName()
+    self.assertEquals('project-id', project_id)
 
-  def testGetProjectNameFromServerNameCustomDomain(self):
+  def testGetProjectIdFromServerNameCustomDomain(self):
     os.environ['SERVER_NAME'] = 'www.mydomain.com'
-    project_name = mimic.GetProjectNameFromServerName()
-    self.assertEquals('www', project_name)
+    project_id = mimic.GetProjectIdFromServerName()
+    self.assertEquals('www', project_id)
 
     os.environ['SERVER_NAME'] = 'proj1.www.mydomain.com'
-    project_name = mimic.GetProjectNameFromServerName()
-    self.assertEquals('proj1', project_name)
+    project_id = mimic.GetProjectIdFromServerName()
+    self.assertEquals('proj1', project_id)
 
-  def testGetProjectNameFromServerNameLocalhost(self):
+  def testGetProjectIdFromServerNameLocalhost(self):
     os.environ['HTTP_HOST'] = 'localhost:8080'
     os.environ['SERVER_NAME'] = 'localhost'
-    project_name = mimic.GetProjectNameFromServerName()
-    self.assertEquals('', project_name)
+    project_id = mimic.GetProjectIdFromServerName()
+    self.assertEquals('', project_id)
 
-  def testGetProjectNameFromServerNameCustomDomainDashDotDash(self):
+  def testGetProjectIdFromServerNameCustomDomainDashDotDash(self):
     os.environ['SERVER_NAME'] = 'proj2-dot-www.mydomain.com'
-    project_name = mimic.GetProjectNameFromServerName()
-    self.assertEquals('proj2', project_name)
+    project_id = mimic.GetProjectIdFromServerName()
+    self.assertEquals('proj2', project_id)
 
-  def testGetProjectNameFromCookie(self):
-    self.assertEquals('_mimic_project', common.config.PROJECT_NAME_COOKIE)
+  def testGetProjectIdFromCookie(self):
+    self.assertEquals('_mimic_project', common.config.PROJECT_ID_COOKIE)
     os.environ.pop('HTTP_COOKIE', None)
-    self.assertEquals('', mimic.GetProjectNameFromCookie())
+    self.assertEquals('', mimic.GetProjectIdFromCookie())
     os.environ['HTTP_COOKIE'] = 'foo=bar'
-    self.assertEquals('', mimic.GetProjectNameFromCookie())
+    self.assertEquals('', mimic.GetProjectIdFromCookie())
     os.environ['HTTP_COOKIE'] = '_mimic_project=proj42'
-    self.assertEquals('proj42', mimic.GetProjectNameFromCookie())
+    self.assertEquals('proj42', mimic.GetProjectIdFromCookie())
     os.environ['HTTP_COOKIE'] = '_mimic_project=proj43; foo=bar'
-    self.assertEquals('proj43', mimic.GetProjectNameFromCookie())
+    self.assertEquals('proj43', mimic.GetProjectIdFromCookie())
     os.environ['HTTP_COOKIE'] = 'foo=bar; _mimic_project=proj44'
-    self.assertEquals('proj44', mimic.GetProjectNameFromCookie())
+    self.assertEquals('proj44', mimic.GetProjectIdFromCookie())
     os.environ['HTTP_COOKIE'] = 'foo=bar; _mimic_project=proj45; a=b'
-    self.assertEquals('proj45', mimic.GetProjectNameFromCookie())
+    self.assertEquals('proj45', mimic.GetProjectIdFromCookie())
     # ensure that cookie parsing does not break when cookie contains '='
     os.environ['HTTP_COOKIE'] = 'foo=b=r'
-    self.assertEquals('', mimic.GetProjectNameFromCookie())
+    self.assertEquals('', mimic.GetProjectIdFromCookie())
 
-  def testGetProjectNameFromPathInfo(self):
+  def testGetProjectIdFromPathInfo(self):
     self.assertEquals('/_mimic/p/(.+?)/',
-                      common.config.PROJECT_NAME_FROM_PATH_INFO_RE.pattern)
-    self.assertEquals('', mimic.GetProjectNameFromPathInfo('/'))
-    self.assertEquals('foo', mimic.GetProjectNameFromPathInfo('/_mimic/p/foo/'))
-    self.assertEquals('', mimic.GetProjectNameFromPathInfo('/_mimic/p/foo'))
+                      common.config.PROJECT_ID_FROM_PATH_INFO_RE.pattern)
+    self.assertEquals('', mimic.GetProjectIdFromPathInfo('/'))
+    self.assertEquals('foo', mimic.GetProjectIdFromPathInfo('/_mimic/p/foo/'))
+    self.assertEquals('', mimic.GetProjectIdFromPathInfo('/_mimic/p/foo'))
     self.assertEquals('foo',
-                      mimic.GetProjectNameFromPathInfo('/_mimic/p/foo/bar'))
+                      mimic.GetProjectIdFromPathInfo('/_mimic/p/foo/bar'))
     self.assertEquals('foo',
-                      mimic.GetProjectNameFromPathInfo('/_mimic/p/foo/bar/'))
+                      mimic.GetProjectIdFromPathInfo('/_mimic/p/foo/bar/'))
 
-  def checkProjectName(self, expected_value, header_value, path_info_value,
+  def checkProjectId(self, expected_value, header_value, path_info_value,
                        server_name_value, cookie_value, is_dev_mode):
     if header_value:
       os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = header_value
@@ -547,35 +547,35 @@ class MimicTest(unittest.TestCase):
       os.environ.pop('HTTP_COOKIE', None)
 
     if is_dev_mode:
-      os.environ['SERVER_SOFTWARE'] = 'Development/check-project-name'
+      os.environ['SERVER_SOFTWARE'] = 'Development/check-project-id'
     else:
-      os.environ['SERVER_SOFTWARE'] = 'Production/check-project-name'
+      os.environ['SERVER_SOFTWARE'] = 'Production/check-project-id'
 
-    self.assertEquals(expected_value, mimic.GetProjectName())
+    self.assertEquals(expected_value, mimic.GetProjectId())
   
-  def testGetProjectName(self):
-    self.checkProjectName('hdr', 'hdr', 'path', 'srvr', 'cook', True)
-    self.checkProjectName('hdr', 'hdr', 'path', 'srvr', 'cook', False)
-    self.checkProjectName('path', None, 'path', 'srvr', 'cook', True)
-    self.checkProjectName('path', None, 'path', 'srvr', 'cook', False)
-    self.checkProjectName('srvr', None, None, 'srvr', 'cook', True)
-    self.checkProjectName('srvr', None, None, 'srvr', 'cook', False)
-    self.checkProjectName('cook', None, None, None, 'cook', True)
-    self.checkProjectName('', None, None, None, 'cook', False)
-    self.checkProjectName('', None, None, None, None, True)
-    self.checkProjectName('', None, None, None, None, False)
+  def testGetProjectId(self):
+    self.checkProjectId('hdr', 'hdr', 'path', 'srvr', 'cook', True)
+    self.checkProjectId('hdr', 'hdr', 'path', 'srvr', 'cook', False)
+    self.checkProjectId('path', None, 'path', 'srvr', 'cook', True)
+    self.checkProjectId('path', None, 'path', 'srvr', 'cook', False)
+    self.checkProjectId('srvr', None, None, 'srvr', 'cook', True)
+    self.checkProjectId('srvr', None, None, 'srvr', 'cook', False)
+    self.checkProjectId('cook', None, None, None, 'cook', True)
+    self.checkProjectId('', None, None, None, 'cook', False)
+    self.checkProjectId('', None, None, None, None, True)
+    self.checkProjectId('', None, None, None, None, False)
 
-  def testVersionIdWithoutProjectName(self):
+  def testVersionIdWithoutProjectId(self):
     self._CallMimic('/_ah/mimic/version_id',
                     http_host='your-app-id.appspot.com')
     self.assertEquals(httplib.OK, self._status)
     # should be a response containing a mimic identifier and some version info
     self.assertTrue(str(common.VERSION_ID) in self._body)
 
-  def testTreeWithoutProjectName(self):
+  def testTreeWithoutProjectId(self):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
-    # tree should still work even though we've not specified a project name
+    # tree should still work even though we've not specified a project id
     self._CallMimic('/main.py', http_host='your-app-id.appspot.com')
     self.assertEquals(httplib.OK, self._status)
     self.assertEquals('hello\n', self._body)
