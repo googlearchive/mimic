@@ -1,4 +1,4 @@
-import re
+"""App Engine configuration file."""
 
 from __mimic import datastore_tree
 from __mimic import mimic
