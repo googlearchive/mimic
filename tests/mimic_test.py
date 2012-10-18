@@ -457,40 +457,40 @@ class MimicTest(unittest.TestCase):
 
   def checkHostParseFailure(self, server_name):
     os.environ['SERVER_NAME'] = server_name
-    project_name = mimic.GetProjectName()
+    project_name = mimic.GetProjectNameFromServerName()
     self.assertEquals('', project_name)
 
-  def testGetProjectNameAppspot(self):
+  def testGetProjectNameFromServerNameAppspot(self):
     os.environ['SERVER_NAME'] = 'project-name.your-app-id.appspot.com'
-    project_name = mimic.GetProjectName()
+    project_name = mimic.GetProjectNameFromServerName()
     self.assertEquals('project-name', project_name)
 
     # Must have project name subdomain
     self.checkHostParseFailure('your-app-id.appspot.com')
 
-  def testGetProjectNameAppspotDashDotDash(self):
+  def testGetProjectNameFromServerNameAppspotDashDotDash(self):
     os.environ['SERVER_NAME'] = 'project-name-dot-your-app-id.appspot.com'
-    project_name = mimic.GetProjectName()
+    project_name = mimic.GetProjectNameFromServerName()
     self.assertEquals('project-name', project_name)
 
-  def testGetProjectNameCustomDomain(self):
+  def testGetProjectNameFromServerNameCustomDomain(self):
     os.environ['SERVER_NAME'] = 'www.mydomain.com'
-    project_name = mimic.GetProjectName()
+    project_name = mimic.GetProjectNameFromServerName()
     self.assertEquals('www', project_name)
 
     os.environ['SERVER_NAME'] = 'proj1.www.mydomain.com'
-    project_name = mimic.GetProjectName()
+    project_name = mimic.GetProjectNameFromServerName()
     self.assertEquals('proj1', project_name)
 
-  def testGetProjectNameLocalhost(self):
+  def testGetProjectNameFromServerNameLocalhost(self):
     os.environ['HTTP_HOST'] = 'localhost:8080'
     os.environ['SERVER_NAME'] = 'localhost'
-    project_name = mimic.GetProjectName()
+    project_name = mimic.GetProjectNameFromServerName()
     self.assertEquals('', project_name)
 
-  def testGetProjectNameCustomDomainDashDotDash(self):
+  def testGetProjectNameFromServerNameCustomDomainDashDotDash(self):
     os.environ['SERVER_NAME'] = 'proj2-dot-www.mydomain.com'
-    project_name = mimic.GetProjectName()
+    project_name = mimic.GetProjectNameFromServerName()
     self.assertEquals('proj2', project_name)
 
   def testVersionIdWithoutProjectName(self):
