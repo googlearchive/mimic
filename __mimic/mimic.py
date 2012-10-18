@@ -287,7 +287,8 @@ def GetProjectNameFromCookie():
   """Returns the project name from the project name cookie."""
   if 'HTTP_COOKIE' not in os.environ:
     return ''
-  cookies = dict([c.split('=') for c in os.environ['HTTP_COOKIE'].split('; ')])
+  cookies = dict([c.split('=', 1) for c in
+                  os.environ['HTTP_COOKIE'].split('; ')])
   return cookies.get(common.config.PROJECT_NAME_COOKIE, '')
 
 
