@@ -283,16 +283,16 @@ def GetProjectNameFromServerName():
 def GetProjectNameFromCookie():
   """Returns the project name from the project name cookie."""
   if 'HTTP_COOKIE' not in os.environ:
-    return None
+    return ''
   cookies = dict([c.split('=') for c in os.environ['HTTP_COOKIE'].split('; ')])
-  return cookies.get(common.config.PROJECT_NAME_COOKIE)
+  return cookies.get(common.config.PROJECT_NAME_COOKIE, '')
 
 
 def GetProjectNameFromPathInfo(path_info):
   """Returns the project name from the request path."""
   m = common.config.PROJECT_NAME_FROM_PATH_INFO_RE.match(path_info)
   if not m:
-    return None
+    return ''
   return m.group(1)
 
 

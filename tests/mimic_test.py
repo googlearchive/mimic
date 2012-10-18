@@ -189,6 +189,7 @@ class MimicTest(unittest.TestCase):
 
   def setUp(self):
     test_util.InitAppHostingApi()
+    os.environ.pop('HTTP_X_APPENGINE_CURRENT_NAMESPACE', None)
     # used by app_identity.get_default_version_hostname()
     os.environ['DEFAULT_VERSION_HOSTNAME'] = 'your-app-id.appspot.com'
     # we set it here to prevent contaimination, may be overridden in tests
@@ -492,6 +493,74 @@ class MimicTest(unittest.TestCase):
     os.environ['SERVER_NAME'] = 'proj2-dot-www.mydomain.com'
     project_name = mimic.GetProjectNameFromServerName()
     self.assertEquals('proj2', project_name)
+
+  def testGetProjectNameFromCookie(self):
+    self.assertEquals('_mimic_project', common.config.PROJECT_NAME_COOKIE)
+    os.environ.pop('HTTP_COOKIE', None)
+    self.assertEquals('', mimic.GetProjectNameFromCookie())
+    os.environ['HTTP_COOKIE'] = 'foo=bar'
+    self.assertEquals('', mimic.GetProjectNameFromCookie())
+    os.environ['HTTP_COOKIE'] = '_mimic_project=proj42'
+    self.assertEquals('proj42', mimic.GetProjectNameFromCookie())
+    os.environ['HTTP_COOKIE'] = '_mimic_project=proj43; foo=bar'
+    self.assertEquals('proj43', mimic.GetProjectNameFromCookie())
+    os.environ['HTTP_COOKIE'] = 'foo=bar; _mimic_project=proj44'
+    self.assertEquals('proj44', mimic.GetProjectNameFromCookie())
+    os.environ['HTTP_COOKIE'] = 'foo=bar; _mimic_project=proj45; a=b'
+    self.assertEquals('proj45', mimic.GetProjectNameFromCookie())
+
+  def testGetProjectNameFromPathInfo(self):
+    self.assertEquals('/_mimic/p/(.+?)/',
+                      common.config.PROJECT_NAME_FROM_PATH_INFO_RE.pattern)
+    self.assertEquals('', mimic.GetProjectNameFromPathInfo('/'))
+    self.assertEquals('foo', mimic.GetProjectNameFromPathInfo('/_mimic/p/foo/'))
+    self.assertEquals('', mimic.GetProjectNameFromPathInfo('/_mimic/p/foo'))
+    self.assertEquals('foo',
+                      mimic.GetProjectNameFromPathInfo('/_mimic/p/foo/bar'))
+    self.assertEquals('foo',
+                      mimic.GetProjectNameFromPathInfo('/_mimic/p/foo/bar/'))
+
+  def checkProjectName(self, expected_value, header_value, path_info_value,
+                       server_name_value, cookie_value, is_dev_mode):
+    if header_value:
+      os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = header_value
+    else:
+      os.environ.pop('HTTP_X_APPENGINE_CURRENT_NAMESPACE', None)
+
+    if path_info_value:
+      os.environ['PATH_INFO'] = '/_mimic/p/{0}/'.format(path_info_value)
+    else:
+      os.environ['PATH_INFO'] = '/foo'
+
+    if server_name_value:
+      os.environ['SERVER_NAME'] = ('{0}-dot-your-app-id.appspot.com'
+                                   .format(server_name_value))
+    else:
+      os.environ['SERVER_NAME'] = 'your-app-id.appspot.com'
+
+    if cookie_value:
+      os.environ['HTTP_COOKIE'] = '_mimic_project={0}'.format(cookie_value)
+    else:
+      os.environ.pop('HTTP_COOKIE', None)
+
+    if is_dev_mode:
+      os.environ['SERVER_SOFTWARE'] = 'Development/check-project-name'
+    else:
+      os.environ['SERVER_SOFTWARE'] = 'Production/check-project-name'
+
+    self.assertEquals(expected_value, mimic.GetProjectName())
+  
+  def testGetProjectName(self):
+    self.checkProjectName('hdr', 'hdr', 'path', 'srvr', 'cook', True)
+    self.checkProjectName('hdr', 'hdr', 'path', 'srvr', 'cook', False)
+    self.checkProjectName('path', None, 'path', 'srvr', 'cook', True)
+    self.checkProjectName('path', None, 'path', 'srvr', 'cook', False)
+    self.checkProjectName('srvr', None, None, 'srvr', 'cook', True)
+    self.checkProjectName('srvr', None, None, 'srvr', 'cook', False)
+    self.checkProjectName('cook', None, None, None, 'cook', True)
+    self.checkProjectName('', None, None, None, 'cook', False)
+    self.checkProjectName('', None, None, None, None, True)
+    self.checkProjectName('', None, None, None, None, False)
 
   def testVersionIdWithoutProjectName(self):
     self._CallMimic('/_ah/mimic/version_id',
