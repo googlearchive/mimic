@@ -494,23 +494,28 @@ class MimicTest(unittest.TestCase):
     project_id = mimic.GetProjectIdFromServerName()
     self.assertEquals('proj2', project_id)
 
-  def testGetProjectIdFromCookie(self):
-    self.assertEquals('_mimic_project', common.config.PROJECT_ID_COOKIE)
-    os.environ.pop('HTTP_COOKIE', None)
-    self.assertEquals('', mimic.GetProjectIdFromCookie())
-    os.environ['HTTP_COOKIE'] = 'foo=bar'
-    self.assertEquals('', mimic.GetProjectIdFromCookie())
-    os.environ['HTTP_COOKIE'] = '_mimic_project=proj42'
-    self.assertEquals('proj42', mimic.GetProjectIdFromCookie())
-    os.environ['HTTP_COOKIE'] = '_mimic_project=proj43; foo=bar'
-    self.assertEquals('proj43', mimic.GetProjectIdFromCookie())
-    os.environ['HTTP_COOKIE'] = 'foo=bar; _mimic_project=proj44'
-    self.assertEquals('proj44', mimic.GetProjectIdFromCookie())
-    os.environ['HTTP_COOKIE'] = 'foo=bar; _mimic_project=proj45; a=b'
-    self.assertEquals('proj45', mimic.GetProjectIdFromCookie())
-    # ensure that cookie parsing does not break when cookie contains '='
-    os.environ['HTTP_COOKIE'] = 'foo=b=r'
-    self.assertEquals('', mimic.GetProjectIdFromCookie())
+  def testGetProjectIdFromQueryParam(self):
+    self.assertEquals('_mimic_project', common.config.PROJECT_ID_QUERY_PARAM)
+    os.environ.pop('QUERY_STRING', None)
+    self.assertEquals('', mimic.GetProjectIdFromQueryParam())
+    os.environ['QUERY_STRING'] = 'foo=bar'
+    self.assertEquals('', mimic.GetProjectIdFromQueryParam())
+    os.environ['QUERY_STRING'] = '_mimic_project=proj42'
+    self.assertEquals('proj42', mimic.GetProjectIdFromQueryParam())
+    os.environ['QUERY_STRING'] = '_mimic_project=proj43&foo=bar'
+    self.assertEquals('proj43', mimic.GetProjectIdFromQueryParam())
+    os.environ['QUERY_STRING'] = 'foo=bar&_mimic_project=proj44'
+    self.assertEquals('proj44', mimic.GetProjectIdFromQueryParam())
+    os.environ['QUERY_STRING'] = 'foo=bar&_mimic_project=proj45&a=b'
+    self.assertEquals('proj45', mimic.GetProjectIdFromQueryParam())
+    # ensure that query string parsing does not break for missing values
+    os.environ['QUERY_STRING'] = 'foo=&_mimic_project=proj46'
+    self.assertEquals('proj46', mimic.GetProjectIdFromQueryParam())
+    os.environ['QUERY_STRING'] = 'foo='
+    self.assertEquals('', mimic.GetProjectIdFromQueryParam())
+    os.environ['QUERY_STRING'] = 'foo=&bar='
+    self.assertEquals('', mimic.GetProjectIdFromQueryParam())
+
 
   def testGetProjectIdFromPathInfo(self):
     self.assertEquals('/_mimic/p/(.+?)/',
@@ -524,7 +529,7 @@ class MimicTest(unittest.TestCase):
                       mimic.GetProjectIdFromPathInfo('/_mimic/p/foo/bar/'))
 
   def checkProjectId(self, expected_value, header_value, path_info_value,
-                       server_name_value, cookie_value, is_dev_mode):
+                       server_name_value, query_value, is_dev_mode):
     if header_value:
       os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = header_value
     else:
@@ -541,10 +546,10 @@ class MimicTest(unittest.TestCase):
     else:
       os.environ['SERVER_NAME'] = 'your-app-id.appspot.com'
 
-    if cookie_value:
-      os.environ['HTTP_COOKIE'] = '_mimic_project={0}'.format(cookie_value)
+    if query_value:
+      os.environ['QUERY_STRING'] = '_mimic_project={0}'.format(query_value)
     else:
-      os.environ.pop('HTTP_COOKIE', None)
+      os.environ['QUERY_STRING'] = ''
 
     if is_dev_mode:
       os.environ['SERVER_SOFTWARE'] = 'Development/check-project-id'
@@ -554,14 +559,14 @@ class MimicTest(unittest.TestCase):
     self.assertEquals(expected_value, mimic.GetProjectId())
   
   def testGetProjectId(self):
-    self.checkProjectId('hdr', 'hdr', 'path', 'srvr', 'cook', True)
-    self.checkProjectId('hdr', 'hdr', 'path', 'srvr', 'cook', False)
-    self.checkProjectId('path', None, 'path', 'srvr', 'cook', True)
-    self.checkProjectId('path', None, 'path', 'srvr', 'cook', False)
-    self.checkProjectId('srvr', None, None, 'srvr', 'cook', True)
-    self.checkProjectId('srvr', None, None, 'srvr', 'cook', False)
-    self.checkProjectId('cook', None, None, None, 'cook', True)
-    self.checkProjectId('', None, None, None, 'cook', False)
+    self.checkProjectId('hdr', 'hdr', 'path', 'srvr', 'query', True)
+    self.checkProjectId('hdr', 'hdr', 'path', 'srvr', 'query', False)
+    self.checkProjectId('path', None, 'path', 'srvr', 'query', True)
+    self.checkProjectId('path', None, 'path', 'srvr', 'query', False)
+    self.checkProjectId('srvr', None, None, 'srvr', 'query', True)
+    self.checkProjectId('srvr', None, None, 'srvr', 'query', False)
+    self.checkProjectId('query', None, None, None, 'query', True)
+    self.checkProjectId('', None, None, None, 'query', False)
     self.checkProjectId('', None, None, None, None, True)
     self.checkProjectId('', None, None, None, None, False)
 
