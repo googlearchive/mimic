@@ -508,6 +508,9 @@ class MimicTest(unittest.TestCase):
     self.assertEquals('proj44', mimic.GetProjectNameFromCookie())
     os.environ['HTTP_COOKIE'] = 'foo=bar; _mimic_project=proj45; a=b'
     self.assertEquals('proj45', mimic.GetProjectNameFromCookie())
+    # ensure that cookie parsing does not break when cookie contains '='
+    os.environ['HTTP_COOKIE'] = 'foo=b=r'
+    self.assertEquals('', mimic.GetProjectNameFromCookie())
 
   def testGetProjectNameFromPathInfo(self):
     self.assertEquals('/_mimic/p/(.+?)/',
