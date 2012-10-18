@@ -125,6 +125,10 @@ class DatastoreTree(common.Tree):
     keys = _AhMimicFile.query(ancestor=self.root).iter(keys_only=True)
     for key in keys:
       entry_path = key.id()
+      # 'path is None' means get all files recursively
+      if path is None:
+        paths.add(entry_path)
+        continue
       if not entry_path.startswith(path):
         continue
       tail = entry_path[len(path):]
