@@ -25,10 +25,9 @@ from email import feedparser
 import sys
 import traceback
 
-from __mimic import common
+
 from __mimic import mimic
 from __mimic import target_env
-
 
 _SEPARATOR = '-' * 50 + '\n'
 
