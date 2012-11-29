@@ -42,7 +42,6 @@ from __mimic import control
 from __mimic import shell
 from __mimic import target_env
 from __mimic import target_info
-
 import yaml
 
 from google.appengine.api import app_identity
