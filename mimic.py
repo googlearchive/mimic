@@ -26,6 +26,7 @@ import sys
 import traceback
 
 
+from __mimic import common
 from __mimic import mimic
 from __mimic import target_env
 
@@ -46,7 +47,7 @@ class Mimic(object):
     saved_out = sys.stdout
     sys.stdout = output
     try:
-      mimic.RunMimic()
+      mimic.RunMimic(create_tree_func=common.config.CREATE_TREE_FUNC)
     except target_env.TargetAppError, err:
       yield self._ExceptionResponse(err.FormattedException())
       return
