@@ -45,9 +45,10 @@ from __mimic import target_info
 import yaml
 
 from google.appengine.api import app_identity
+# pylint: disable-msg=g-import-not-at-top
 try:
   from google.appengine.api import appinfo
-except:
+except ImportError:
   # import parts of the google.appengine.api.appinfo package (extracted from
   # the local SDK by sdkapi.sh), since the appinfo package is currently
   # unavailable in the App Engine production environment
@@ -55,6 +56,7 @@ except:
 from google.appengine.api import namespace_manager
 from google.appengine.api import users
 from google.appengine.ext.webapp.util import run_wsgi_app
+# pylint: enable-msg=g-import-not-at-top
 
 # os.environ key representing 'X-AppEngine-QueueName' HTTP header,
 # which should only be present for 'offline' task queue requests, see
