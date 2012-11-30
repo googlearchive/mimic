@@ -45,7 +45,13 @@ from __mimic import target_info
 import yaml
 
 from google.appengine.api import app_identity
-from google.appengine.api import appinfo
+try:
+  from google.appengine.api import appinfo
+except:
+  # import parts of the google.appengine.api.appinfo package (extracted from
+  # the local SDK by sdkapi.sh), since the appinfo package is currently
+  # unavailable in the App Engine production environment
+  from sdkapi import appinfo
 from google.appengine.api import namespace_manager
 from google.appengine.api import users
 from google.appengine.ext.webapp.util import run_wsgi_app
