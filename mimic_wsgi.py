@@ -65,7 +65,7 @@ class Mimic(object):
 
   def _ExceptionResponse(self, formatted_exception):
     status = '500 Server Error'
-    response_headers = [('Content-type', 'text/plain')]
+    response_headers = [('Content-type', 'text/plain; charset=utf-8')]
     self.start_response(status, response_headers)
     response = _SEPARATOR
     response += ''.join(formatted_exception)

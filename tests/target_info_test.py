@@ -227,7 +227,7 @@ builtins:
 
   def testMimeTypeOnStaticDir(self):
     config = yaml.load(APP_YAML + """
-  mime_type: text/plain
+  mime_type: text/plain; charset=utf-8
 """)
     target_info._ValidateConfig(config)
 
@@ -241,7 +241,8 @@ builtins:
 
   def testMimeTypeOnScript(self):
     config = yaml.load(APP_YAML)
-    handler = {'url': '/', 'script': 'main.py', 'mime_type': 'text/plain'}
+    handler = {'url': '/', 'script': 'main.py',
+               'mime_type': 'text/plain; charset=utf-8'}
     config['handlers'] = [handler]
     self.assertRaises(target_info.ValidationError,
                       target_info._ValidateConfig, config)
@@ -438,7 +439,7 @@ class MatchHandlerTest(unittest.TestCase):
                         target_info._MatchHandler(handler, '/foo/x.html'))
 
     CheckMimeType(None)
-    CheckMimeType('text/plain')
+    CheckMimeType('text/plain; charset=utf-8')
     CheckMimeType('blah blah blah')
 
   def testStaticFilesMimeType(self):
@@ -452,8 +453,8 @@ class MatchHandlerTest(unittest.TestCase):
                         target_info._MatchHandler(handler, '/xfoo.xyz'))
 
     CheckMimeType(None)
-    CheckMimeType('text/plain')
-    CheckMimeType('text/html')
+    CheckMimeType('text/plain; charset=utf-8')
+    CheckMimeType('text/html; charset=utf-8')
     CheckMimeType('blah blah blah')
 
 

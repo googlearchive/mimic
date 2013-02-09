@@ -45,7 +45,7 @@ class FileHandler(webapp.RequestHandler):
 
   def get(self):  # pylint: disable-msg=C6409
     """Executes a file non-interactively printing the result to response.out."""
-    self.response.headers['Content-Type'] = 'text/plain'
+    self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
     path = self.request.get('path')
     if not path:
       return

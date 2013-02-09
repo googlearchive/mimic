@@ -62,8 +62,9 @@ class ShellAppTest(unittest.TestCase):
           /foo or /foo?x=123
       post: Optional data to be sent as the body of a POST (this also changes
           the REQUEST_METHOD from GET to POST).
-      form: True indicates application/x-www-form-urlencoded should be used
-          as the content type, otherwise the default of test/plain is used.
+      form: True indicates 'application/x-www-form-urlencoded' should be used
+          as the content type, otherwise the default of
+          'text/plain; charset=utf-8' is used.
     """
     env = test_util.GetDefaultEnvironment()
     # setup path and query
@@ -80,7 +81,7 @@ class ShellAppTest(unittest.TestCase):
       if form:
         env['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
       else:
-        env['CONTENT_TYPE'] = 'text/plain'
+        env['CONTENT_TYPE'] = 'text/plain; charset=utf-8'
       env['CONTENT_LENGTH'] = len(post)
       env['wsgi.input'] = input_stream
     # invoke the application

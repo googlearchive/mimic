@@ -57,7 +57,7 @@ class MainTestPageHandler(webapp.RequestHandler):
 
   def get(self):  # pylint: disable-msg=C6409
     """Handle HTTP GET requests."""
-    self.response.headers['Content-Type'] = 'text/plain'
+    self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
     output = cStringIO.StringIO()
     saved_output = sys.stdout
     try:

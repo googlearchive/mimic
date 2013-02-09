@@ -63,7 +63,7 @@ class _FileHandler(_TreeHandler):
 
   def get(self):  # pylint: disable-msg=C6409
     """Get a file's contents."""
-    self.response.headers['Content-Type'] = 'text/plain'
+    self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
     path = self.request.get('path')
     if not path:
       self.error(httplib.BAD_REQUEST)
@@ -91,7 +91,7 @@ class _IndexHandler(webapp.RequestHandler):
   """
 
   def get(self):  # pylint: disable-msg=C6409
-    self.response.headers['Content-Type'] = 'text/plain'
+    self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
     # TODO: composite_query._RecordIndex() records the app's index
     # yaml in the munged (ie, project-name-prefixed) namespace, so _IndexHandler
     # must read from that namespace. Likely the right thing to do here is to
@@ -167,7 +167,7 @@ class _VersionIdHandler(webapp.RequestHandler):
   """Handler that returns the version ID of this mimic."""
 
   def get(self):  # pylint: disable-msg=C6409, C6111
-    self.response.headers['Content-Type'] = 'text/plain'
+    self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
     self.response.headers['Access-Control-Allow-Origin'] = '*'
     self.response.out.write('MIMIC\n')
     self.response.out.write('version_id=%s\n' % str(common.VERSION_ID))

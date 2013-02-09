@@ -103,7 +103,7 @@ class ControlAppTest(unittest.TestCase):
       if form:
         env['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
       else:
-        env['CONTENT_TYPE'] = 'text/plain'
+        env['CONTENT_TYPE'] = 'text/plain; charset=utf-8'
       env['CONTENT_LENGTH'] = len(post)
       env['wsgi.input'] = input_stream
     # invoke the application

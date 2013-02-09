@@ -39,7 +39,7 @@ import unittest
 # https://developers.google.com/appengine/docs/python/gettingstarted/helloworld
 _SIMPLE_CGI_SCRIPT = """
 print 'Status: 200'
-print 'Content-Type: text/plain'
+print 'Content-Type: text/plain; charset=utf-8'
 print
 print 'hello'
 """
@@ -51,7 +51,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 
 class MainPage(webapp.RequestHandler):
     def get(self):
-        self.response.headers['Content-Type'] = 'text/plain'
+        self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
         self.response.out.write('Hello, main cgi wsgi\n')
 
 application = webapp.WSGIApplication(
@@ -70,7 +70,7 @@ from google.appengine.ext import webapp
 
 class MainPage(webapp.RequestHandler):
   def get(self):
-    self.response.headers['Content-Type'] = 'text/plain'
+    self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
     self.response.out.write('Hello, webapp\n')
 
 app = webapp.WSGIApplication(
@@ -86,7 +86,7 @@ assert hasattr(webapp2, 'get_app'), 'Tests must use webapp2'
 
 class MainPage(webapp2.RequestHandler):
   def get(self):
-      self.response.headers['Content-Type'] = 'text/plain'
+      self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
       self.response.out.write('Hello, webapp2\n')
 
 app = webapp2.WSGIApplication([('/.*', MainPage)],
@@ -294,7 +294,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._AddFile('static/foo.txt', '123')
     self._CallMimic('/foo.txt')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('123', self._body)
 
   def testStaticPageNotFound(self):
@@ -306,14 +306,14 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._AddFile('static/foo.html', '<html>hello</html>')
     self._CallMimic('/foo.html')
-    self._CheckResponse(httplib.OK, 'text/html')
+    self._CheckResponse(httplib.OK, 'text/html; charset=utf-8')
     self.assertEquals('<html>hello</html>', self._body)
 
   def testAppYamlImplicitDefaultExpirationIsTenMinutes(self):
     self._AddFile('app.yaml', MakeAppYaml())
     self._AddFile('static/foo.txt', '123')
     self._CallMimic('/foo.txt')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('123', self._body)
     self.assertResponseExpiration(600)  # 10 minutes
 
@@ -321,7 +321,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', MakeAppYaml(expiration='2h'))
     self._AddFile('static/foo.txt', '123')
     self._CallMimic('/foo.txt')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('123', self._body)
     self.assertResponseExpiration(7200)  # 2 hours
 
@@ -329,7 +329,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', MakeAppYaml(default_expiration='42s'))
     self._AddFile('static/foo.txt', '123')
     self._CallMimic('/foo.txt')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('123', self._body)
     self.assertResponseExpiration(42)  # 42 seconds
 
@@ -337,7 +337,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', MakeAppYaml(default_expiration='42s'))
     self._AddFile('static/1d2h3m4s.txt', '123')
     self._CallMimic('/1d2h3m4s.txt')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('123', self._body)
     # 60 * 60 * 24 (1d) + 2 * 60 * 60 (2h) + 3 * 60 (3m) + 4 (4s)
     self.assertResponseExpiration(93784)
@@ -347,14 +347,14 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', MakeAppYaml(login='required'))
     self._AddFile('static/foo.txt', '123')
     self._CallMimic('/foo.txt')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('123', self._body)
 
   def testStaticPageLoginRequiredForbidden(self):
     self._AddFile('app.yaml', MakeAppYaml(login='required'))
     self._AddFile('static/foo.txt', '123')
     self._CallMimic('/foo.txt')
-    self._CheckResponse(httplib.FORBIDDEN, 'text/html')
+    self._CheckResponse(httplib.FORBIDDEN, 'text/html; charset=utf-8')
 
   def testStaticPageLoginAdmin(self):
     self._users_mod.set_current_user_is_admin(True)
@@ -362,7 +362,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', MakeAppYaml(login='admin'))
     self._AddFile('static/foo.txt', '123')
     self._CallMimic('/foo.txt')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('123', self._body)
 
   def testStaticPageLoginAdminForbidden(self):
@@ -370,27 +370,27 @@ class MimicTest(unittest.TestCase):
     self._users_mod.set_current_user(FakeUser('Bob'))
     self._AddFile('app.yaml', MakeAppYaml(login='admin'))
     self._CallMimic('/static/foo.txt')
-    self._CheckResponse(httplib.FORBIDDEN, 'text/html')
+    self._CheckResponse(httplib.FORBIDDEN, 'text/html; charset=utf-8')
 
   def testWebappPage(self):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._AddFile('webapp.py', _SIMPLE_WEBAPP)
     self._CallMimic('/webapp.app')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('Hello, webapp\n', self._body)
 
   def testWebapp2Page(self):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._AddFile('webapp2.py', _SIMPLE_WEBAPP2)
     self._CallMimic('/webapp2.app')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('Hello, webapp2\n', self._body)
 
   def testMainCgiWsgiScript(self):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._AddFile('main_cgi_wsgi.py', _MAIN_CGI_WSGI_SCRIPT)
     self._CallMimic('/main_cgi_wsgi.py')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('Hello, main cgi wsgi\n', self._body)
 
   def testNoDefaultContentType(self):
@@ -406,7 +406,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
     self._CallMimic('/main.py')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('hello\n', self._body)
 
   def testCgiPageNotFound(self):
@@ -419,14 +419,14 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', MakeAppYaml(login='required'))
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
     self._CallMimic('/main.py')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('hello\n', self._body)
 
   def testScritPageLoginRequiredForbidden(self):
     self._AddFile('app.yaml', MakeAppYaml(login='required'))
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
     self._CallMimic('/main.py')
-    self._CheckResponse(httplib.FORBIDDEN, 'text/html')
+    self._CheckResponse(httplib.FORBIDDEN, 'text/html; charset=utf-8')
 
   def testCgiPageLoginAdmin(self):
     self._users_mod.set_current_user_is_admin(True)
@@ -434,7 +434,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', MakeAppYaml(login='admin'))
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
     self._CallMimic('/main.py')
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('hello\n', self._body)
 
   def testCgiPageLoginAdminForbidden(self):
@@ -442,7 +442,7 @@ class MimicTest(unittest.TestCase):
     self._users_mod.set_current_user(FakeUser('Bob'))
     self._AddFile('app.yaml', MakeAppYaml(login='admin'))
     self._CallMimic('/main.py')
-    self._CheckResponse(httplib.FORBIDDEN, 'text/html')
+    self._CheckResponse(httplib.FORBIDDEN, 'text/html; charset=utf-8')
 
   def testCgiPageLoginAdminAccessFromCron(self):
     self._users_mod.set_current_user_is_admin(False)
@@ -450,7 +450,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
     self._CallMimic('/main.py',
                     os_environ={mimic._HTTP_X_APPENGINE_CRON: 'true'})
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('hello\n', self._body)
 
   def testCgiPageLoginAdminAccessFromTaskQueue(self):
@@ -459,7 +459,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
     self._CallMimic('/main.py',
                     os_environ={mimic._HTTP_X_APPENGINE_QUEUENAME: 'default'})
-    self._CheckResponse(httplib.OK, 'text/plain')
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('hello\n', self._body)
 
   def CheckHostParseFailure(self, server_name):
@@ -626,7 +626,7 @@ p.put()
 # See https://developers.google.com/appengine/articles/transaction_isolation
 person.Person.get_by_key_name('person')
 
-print 'Content-type: text/plain'
+print 'Content-type: text/plain; charset=utf-8'
 print 'Status: 200'
 print ''
 print 'name: ' + name
@@ -635,7 +635,7 @@ print 'name: ' + name
     get_script = """
 import person
 
-print 'Content-type: text/plain'
+print 'Content-type: text/plain; charset=utf-8'
 print 'Status: 200'
 print ''
 p = person.Person.get_by_key_name('person')
@@ -649,7 +649,7 @@ else:
 from google.appengine.ext import db
 import person
 
-print 'Content-type: text/plain'
+print 'Content-type: text/plain; charset=utf-8'
 print 'Status: 200'
 print ''
 query = db.Query(person.Person)
@@ -661,7 +661,7 @@ for p in people:
     gql_query_script = """
 from google.appengine.ext import db
 
-print 'Content-type: text/plain'
+print 'Content-type: text/plain; charset=utf-8'
 print 'Status: 200'
 print ''
 query = db.GqlQuery('SELECT * FROM Person')
@@ -736,7 +736,7 @@ import os
 value = os.environ['PATH_INFO'].split('?')[1]
 memcache.add(key="my_key", value=value, time=3600)
 
-print 'Content-type: text/plain'
+print 'Content-type: text/plain; charset=utf-8'
 print 'Status: 200'
 print ''
 print 'value: ' + value
@@ -747,7 +747,7 @@ from google.appengine.api import memcache
 
 value = memcache.get(key="my_key")
 
-print 'Content-type: text/plain'
+print 'Content-type: text/plain; charset=utf-8'
 print 'Status: 200'
 print ''
 print 'value: ' + value

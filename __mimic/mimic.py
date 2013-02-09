@@ -92,9 +92,10 @@ _NOT_FOUND_PAGE = """
 _most_recent_query_string_project_id = None
 
 
-def RespondWithStatus(status_code, expiration_s=0, content_type='text/plain',
+def RespondWithStatus(status_code, expiration_s=0,
+                      content_type='text/plain; charset=utf-8',
                       data=None, headers=None):
-  """Respond with a status code and optional text/plain data."""
+  """Respond with a status code and optional text/plain; charset=utf-8 data."""
   print 'Content-Type: %s' % content_type
   print 'Status: %d' % status_code
   if expiration_s:
@@ -119,7 +120,8 @@ def ServeStaticPage(tree, page):
   logging.info('Serving static page %s', file_path)
   file_data = tree.GetFileContents(file_path)
   if file_data is None:
-    RespondWithStatus(httplib.NOT_FOUND, content_type='text/html',
+    RespondWithStatus(httplib.NOT_FOUND,
+                      content_type='text/html; charset=utf-8',
                       data=_NOT_FOUND_PAGE % file_path)
     return
   if page.mime_type is not None:
@@ -130,7 +132,9 @@ def ServeStaticPage(tree, page):
     if file_path.lower().endswith('.ico'):
       content_type = 'image/x-icon'
     else:
-      content_type = 'text/plain'
+      content_type = 'text/plain; charset=utf-8'
+  if content_type.startswith('text/') and not '; charset=' in content_type:
+    content_type = content_type + '; charset=utf-8'
   # should not raise ConfigurationError, but even that would be ok
   expiration_s = appinfo.ParseExpiration(page.expiration)
   RespondWithStatus(httplib.OK, content_type=content_type,
@@ -221,7 +225,8 @@ def RunTargetApp(tree, path_info, namespace, users_mod):
   page = target_info.FindPage(config, path_info)
 
   if not page:
-    RespondWithStatus(httplib.NOT_FOUND, content_type='text/html',
+    RespondWithStatus(httplib.NOT_FOUND,
+                      content_type='text/html; charset=utf-8',
                       data=_NOT_FOUND_PAGE % path_info)
     return
 
@@ -245,7 +250,7 @@ def RunTargetApp(tree, path_info, namespace, users_mod):
       message = ('You are not authorized to view this page. '
                  'You may need to <a href="{0}">login</a>.'.format(url))
     RespondWithStatus(httplib.FORBIDDEN, data=message,
-                      headers=[('Content-Type', 'text/html')])
+                      headers=[('Content-Type', 'text/html; charset=utf-8')])
     return
   # dispatch the page
   if isinstance(page, target_info.StaticPage):
