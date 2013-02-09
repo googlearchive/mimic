@@ -304,6 +304,20 @@ class MimicTest(unittest.TestCase):
     self._CheckResponse(httplib.OK, 'application/octet-stream')
     self.assertEquals('\u3020\u3020', self._body)
 
+  def testStaticPageExtensionOnlyDefaultMimeType(self):
+    self._AddFile('app.yaml', _GENERIC_APP_YAML)
+    self._AddFile('static/.extensiononly', 'something')
+    self._CallMimic('/.extensiononly')
+    self._CheckResponse(httplib.OK, 'application/octet-stream')
+    self.assertEquals('something', self._body)
+
+  def testStaticPageNoExtensionDefaultMimeType(self):
+    self._AddFile('app.yaml', _GENERIC_APP_YAML)
+    self._AddFile('static/filewithoutextension', 'something')
+    self._CallMimic('/filewithoutextension')
+    self._CheckResponse(httplib.OK, 'application/octet-stream')
+    self.assertEquals('something', self._body)
+
   def testStaticPageNotFound(self):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._CallMimic('/bar.html')

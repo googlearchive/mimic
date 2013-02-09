@@ -127,14 +127,7 @@ def ServeStaticPage(tree, page):
   if page.mime_type is not None:
     content_type = page.mime_type
   else:
-    content_type, _ = mimetypes.guess_type(file_path)
-  if content_type is None:
-    if file_path.lower().endswith('.ico'):
-      content_type = 'image/x-icon'
-    else:
-      content_type = 'application/octet-stream'
-  if content_type.startswith('text/') and not '; charset=' in content_type:
-    content_type = content_type + '; charset=utf-8'
+    content_type = common.GuessMimeType(file_path)
   # should not raise ConfigurationError, but even that would be ok
   expiration_s = appinfo.ParseExpiration(page.expiration)
   RespondWithStatus(httplib.OK, content_type=content_type,

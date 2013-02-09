@@ -18,6 +18,8 @@
 
 
 
+import logging
+import mimetypes
 import os
 import re
 
@@ -55,6 +57,23 @@ config = lib_config.register('mimic', {
     # dev_appserver query parameter used to identify the project_id
     'PROJECT_ID_QUERY_PARAM': '_mimic_project',
     })
+
+# supplement mimetypes.guess_type()'s limited guessing abilities
+_TEXT_MIME_TYPES = {
+    'css': 'text/css',
+    # *.dart uses *.js MIME Type for now
+    'dart': 'text/javascript',
+    'html': 'text/html',
+    'ico': 'image/x-icon',
+    'js': 'text/javascript',
+    'jsp': 'application/x-jsp',
+    'json': 'application/json',
+    'php': 'application/x-httpd-php',
+    'sh': 'text/x-sh',
+    'sql': 'text/x-mysql',
+    'xml': 'application/xml',
+    'yaml': 'text/x-yaml',
+}
 
 
 class Error(Exception):
@@ -267,3 +286,31 @@ def SetPersistent(name, value):
 def ClearPersistent(name):
   """Clear a persisted name."""
   ndb.Key(_AhMimicPersist, name).delete()
+
+
+def GetExtension(filename):
+  """Determine a filename's extension."""
+  return filename.lower().split('.')[-1]
+
+
+def GuessMimeType(filename):
+  """Guess the MIME Type based on the provided filename.
+
+  Args:
+    filename: the filename for which to determine a suitable MIME Type.
+
+  Returns:
+    The MIME Type based on the provided filename's extension.
+  """
+  extension = GetExtension(filename)
+  mime_type = _TEXT_MIME_TYPES.get(extension)
+  if not mime_type:
+    mime_type, _ = mimetypes.guess_type(filename)
+  if not mime_type:
+    logging.warning('Failed to guess MIME Type for "%s" with extension "%s"',
+                    filename, extension)
+  if not mime_type:
+    mime_type = 'application/octet-stream'
+  if (mime_type.startswith('text/') and '; charset=' not in mime_type):
+    mime_type = mime_type + '; charset=utf-8'
+  return mime_type
