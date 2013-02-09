@@ -297,6 +297,13 @@ class MimicTest(unittest.TestCase):
     self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('123', self._body)
 
+  def testStaticPageDefaultMimeType(self):
+    self._AddFile('app.yaml', _GENERIC_APP_YAML)
+    self._AddFile('static/foo.unknown', '\u3020\u3020')
+    self._CallMimic('/foo.unknown')
+    self._CheckResponse(httplib.OK, 'application/octet-stream')
+    self.assertEquals('\u3020\u3020', self._body)
+
   def testStaticPageNotFound(self):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._CallMimic('/bar.html')

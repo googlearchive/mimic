@@ -132,7 +132,7 @@ def ServeStaticPage(tree, page):
     if file_path.lower().endswith('.ico'):
       content_type = 'image/x-icon'
     else:
-      content_type = 'text/plain; charset=utf-8'
+      content_type = 'application/octet-stream'
   if content_type.startswith('text/') and not '; charset=' in content_type:
     content_type = content_type + '; charset=utf-8'
   # should not raise ConfigurationError, but even that would be ok
