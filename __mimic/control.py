@@ -23,8 +23,8 @@ import json
 import logging
 import os
 
-from __mimic import common
-from __mimic import composite_query
+from . import common
+from . import composite_query
 
 from google.appengine.api import channel
 from google.appengine.ext import webapp

@@ -20,8 +20,8 @@
 
 import pickle
 
-from __mimic import common
-from __mimic.util import patch
+from . import common
+from .util import patch
 
 from google.appengine.api import datastore
 from google.appengine.datastore import datastore_index

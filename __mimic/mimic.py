@@ -37,11 +37,11 @@ import time
 import urlparse
 
 
-from __mimic import common
-from __mimic import control
-from __mimic import shell
-from __mimic import target_env
-from __mimic import target_info
+from . import common
+from . import control
+from . import shell
+from . import target_env
+from . import target_info
 import yaml
 
 from google.appengine.api import app_identity

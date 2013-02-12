@@ -24,8 +24,8 @@
 import logging
 import sys
 
-from __mimic import common
-from __mimic import target_env
+from . import common
+from . import target_env
 
 from google.appengine.ext import webapp
 

@@ -19,7 +19,7 @@
 
 
 
-from __mimic import common
+from . import common
 
 from google.appengine.ext import ndb
 
