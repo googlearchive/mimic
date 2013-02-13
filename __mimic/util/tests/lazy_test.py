@@ -18,7 +18,7 @@
 
 
 
-from .util import lazy
+from __mimic.util import lazy
 
 import unittest
 

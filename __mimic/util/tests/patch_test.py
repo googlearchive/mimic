@@ -21,7 +21,7 @@
 import __builtin__
 import sys
 
-from .util import patch
+from __mimic.util import patch
 
 import unittest
 
