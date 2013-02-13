@@ -56,6 +56,10 @@ config = lib_config.register('mimic', {
     'PROJECT_ID_FROM_PATH_INFO_RE': re.compile('/_mimic/p/(.+?)/'),
     # dev_appserver query parameter used to identify the project_id
     'PROJECT_ID_QUERY_PARAM': '_mimic_project',
+    # allowed CORS origins
+    'CORS_ALLOWED_ORIGINS': [],
+    # allowed CORS HTTP headers
+    'CORS_ALLOWED_HEADERS': 'Origin, Accept'
     })
 
 # supplement mimetypes.guess_type()'s limited guessing abilities

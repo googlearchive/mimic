@@ -61,8 +61,32 @@ class _ClearHandler(_TreeHandler):
 class _FileHandler(_TreeHandler):
   """Handler for getting/setting files."""
 
+  def _CheckCors(self):
+    origin = self.request.headers.get('Origin')
+    # If not a CORS request, do nothing
+    if not origin:
+      return
+
+    if origin not in common.config.CORS_ALLOWED_ORIGINS:
+      self.response.set_status(httplib.UNAUTHORIZED)
+      self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
+      self.response.write('Unrecognized origin {}'.format(origin))
+      return
+    # OK, CORS access allowed
+    self.response.headers['Access-Control-Allow-Origin'] = origin
+    self.response.headers['Access-Control-Allow-Methods'] = 'GET'
+    self.response.headers['Access-Control-Max-Age'] = '600'
+    allowed_headers = common.config.CORS_ALLOWED_HEADERS
+    self.response.headers['Access-Control-Allow-Headers'] = allowed_headers
+    self.response.headers['Access-Control-Allow-Credentials'] = 'true'
+
+  def options(self):
+    """Allow CORS requests."""
+    self._CheckCors()
+
   def get(self):  # pylint: disable-msg=C6409
     """Get a file's contents."""
+    self._CheckCors()
     self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
     path = self.request.get('path')
     if not path:

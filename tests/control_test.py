@@ -77,14 +77,17 @@ class ControlAppTest(unittest.TestCase):
     """Used by StartResponse to accumlate response data."""
     self._output += data
 
-  def RunWSGI(self, path_query, post=None, form=False):
+  def RunWSGI(self, path_query, headers=[], method='GET', data=None,
+              form=False):
     """Invoke the application on a given path/query.
 
     Args:
       path_query: The path and optional query portion of the URL, for example
           /foo or /foo?x=123
-      post: Optional data to be sent as the body of a POST (this also changes
-          the REQUEST_METHOD from GET to POST).
+      headers: The HTTP request headers to be sent.
+      method: The HTTP method, such as GET, POST, OPTIONS, PUT, DELETE
+      data: Optional data to be sent as the body of a POST (this also forces
+          the HTTP method to be POST).
       form: True indicates application/x-www-form-urlencoded should be used
           as the content type, otherwise the default of test/plain is used.
     """
@@ -96,16 +99,21 @@ class ControlAppTest(unittest.TestCase):
       env['QUERY_STRING'] = query
     else:
       env['PATH_INFO'] = path_query
+    # HTTP request headers
+    if headers:
+      for k, v in headers.items():
+        env['HTTP_' + k.upper().replace('-', '_')] = v
     # handle POST data
-    if post is not None:
-      input_stream = cStringIO.StringIO(post)
-      env['REQUEST_METHOD'] = 'POST'
+    if data is not None:
+      input_stream = cStringIO.StringIO(data)
+      method = 'POST'
       if form:
         env['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
       else:
         env['CONTENT_TYPE'] = 'text/plain; charset=utf-8'
-      env['CONTENT_LENGTH'] = len(post)
+      env['CONTENT_LENGTH'] = len(data)
       env['wsgi.input'] = input_stream
+    env['REQUEST_METHOD'] = method
     # invoke the application
     response = self._application(env, self.StartResponse)
     for data in response:
@@ -148,6 +156,50 @@ class ControlAppTest(unittest.TestCase):
     }
     self.Check(httplib.OK, headers=headers, output='pretty')
 
+  def testCorsPreflightAllowed(self):
+    self.RunWSGI('/_ah/mimic/file?path=foo.txt', method='OPTIONS',
+                 headers={'Origin': 'http://localhost:8080'})
+    headers = {
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Headers': 'Origin, Accept',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Origin': 'http://localhost:8080',
+        'Access-Control-Max-Age': '600',
+        'Content-Length': '0',
+        # App Engine's default MIME type
+        'content-type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+    }
+    self.Check(httplib.OK, headers=headers)
+
+  def testCorsPreflightDenied(self):
+    self.RunWSGI('/_ah/mimic/file?path=foo.txt', method='OPTIONS',
+                 headers={'Origin': 'http://otherdomain.com'})
+    headers = {
+        'Content-Length': '42',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+    }
+    self.Check(httplib.UNAUTHORIZED, headers=headers)
+
+  def testCorsAllowHeaders(self):
+    self.RunWSGI('/_ah/mimic/file?path=foo.txt', method='OPTIONS',
+                 headers={'Origin': 'http://localhost:8080'})
+    self.Check(httplib.OK)
+    self.assertEquals('Origin, Accept',
+                      self._headers.get('Access-Control-Allow-Headers'))
+    # allow custom 'X-Foo' HTTP request header
+    saved_headers = common.config.CORS_ALLOWED_HEADERS
+    common.config.CORS_ALLOWED_HEADERS = 'Origin, Accept, X-Foo'
+    try:
+      self.RunWSGI('/_ah/mimic/file?path=foo.txt', method='OPTIONS',
+                   headers={'Origin': 'http://localhost:8080', 'X-Foo': 'Bar'})
+    finally:
+      common.config.CORS_ALLOWED_HEADERS = saved_headers
+    self.Check(httplib.OK)
+    self.assertEquals('Origin, Accept, X-Foo',
+                      self._headers.get('Access-Control-Allow-Headers'))
+
   def testGetFileNotFound(self):
     self.RunWSGI('/_ah/mimic/file?path=foo.html')
     headers = {
@@ -178,13 +230,13 @@ class ControlAppTest(unittest.TestCase):
         return True
 
     self.setUpApplication(MutableTree())
-    self.RunWSGI('/_ah/mimic/file?path=foo.html', post='abc')
+    self.RunWSGI('/_ah/mimic/file?path=foo.html', data='abc')
     self.Check(httplib.OK)
     self.assertEqual(self._tree.contents, 'abc')
     self.assertEqual(self._tree.path, 'foo.html')
 
   def testSetFileBadRequest(self):
-    self.RunWSGI('/_ah/mimic/file', post='123')
+    self.RunWSGI('/_ah/mimic/file', data='123')
     self.Check(httplib.BAD_REQUEST)
 
   def testSetFileImmutable(self):
@@ -193,11 +245,11 @@ class ControlAppTest(unittest.TestCase):
         return False
 
     self.setUpApplication(ImmutableTree())
-    self.RunWSGI('/_ah/mimic/file?path=foo.html', post='abc')
+    self.RunWSGI('/_ah/mimic/file?path=foo.html', data='abc')
     self.Check(httplib.BAD_REQUEST)
 
   def testClear(self):
-    self.RunWSGI('/_ah/mimic/clear', post='')
+    self.RunWSGI('/_ah/mimic/clear', data='')
     self.Check(httplib.OK)
     self.assertEquals([], self._tree.ListDirectory('/'))
 
@@ -207,7 +259,7 @@ class ControlAppTest(unittest.TestCase):
         return False
 
     self.setUpApplication(ImmutableTree())
-    self.RunWSGI('/_ah/mimic/clear', post='')
+    self.RunWSGI('/_ah/mimic/clear', data='')
     self.Check(httplib.BAD_REQUEST)
 
   def testLog(self):
@@ -225,7 +277,7 @@ class ControlAppTest(unittest.TestCase):
 bar
 
 foo""")
-    self.RunWSGI('/_ah/mimic/index', post='')
+    self.RunWSGI('/_ah/mimic/index', data='')
     self.Check(httplib.OK, output="""indexes:
 
 """)
