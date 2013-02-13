@@ -111,30 +111,62 @@ class ControlAppTest(unittest.TestCase):
     for data in response:
       self.AccumulateOutput(data)
 
-  def Check(self, status_code, output=None):
+  def Check(self, status_code, headers=None, output=None):
     """Check the results of invoking the application.
 
     Args:
       status_code: The expected numeric HTTP status code.
+      headers: The expected HTTP headers. A dict.
       output: The expected output, or None if output should not be checked.
     """
     actual = int(self._status.split(' ', 1)[0])
     self.assertEquals(status_code, actual)
     if output is not None:
       self.assertEquals(output, self._output)
+    if headers is not None:
+      self.assertEquals(headers, self._headers)
 
   def testGetFileContents(self):
     self._tree.SetFile('foo.html', '123')
     self.RunWSGI('/_ah/mimic/file?path=foo.html')
-    self.Check(httplib.OK, output='123')
+    headers = {
+        'Content-Length': '3',
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+    }
+    self.Check(httplib.OK, headers=headers, output='123')
+
+  def testGetFileContentsAlternateContentType(self):
+    self._tree.SetFile('foo.css', 'pretty')
+    self.RunWSGI('/_ah/mimic/file?path=foo.css')
+    headers = {
+        'Content-Length': '6',
+        'Content-Type': 'text/css; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+    }
+    self.Check(httplib.OK, headers=headers, output='pretty')
 
   def testGetFileNotFound(self):
     self.RunWSGI('/_ah/mimic/file?path=foo.html')
-    self.Check(httplib.NOT_FOUND)
+    headers = {
+        'Content-Length': '29',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+    }
+    self.Check(httplib.NOT_FOUND, headers=headers,
+               output='File does not exist: foo.html')
 
   def testGetFileBadRequest(self):
     self.RunWSGI('/_ah/mimic/file')
-    self.Check(httplib.BAD_REQUEST)
+    headers = {
+        'Content-Length': '22',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+    }
+    self.Check(httplib.BAD_REQUEST, headers=headers,
+               output='Path must be specified')
 
   def testSetFile(self):
     class MutableTree(object):

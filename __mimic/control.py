@@ -67,11 +67,15 @@ class _FileHandler(_TreeHandler):
     path = self.request.get('path')
     if not path:
       self.error(httplib.BAD_REQUEST)
+      self.response.write('Path must be specified')
       return
     data = self._tree.GetFileContents(path)
     if data is None:
       self.error(httplib.NOT_FOUND)
+      self.response.write('File does not exist: %s' % path)
       return
+    self.response.headers['Content-Type'] = common.GuessMimeType(path)
+    self.response.headers['X-Content-Type-Options'] = 'nosniff'
     self.response.out.write(data)
 
   def post(self):  # pylint: disable-msg=C6409
