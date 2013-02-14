@@ -521,6 +521,11 @@ class MimicTest(unittest.TestCase):
     project_id = mimic.GetProjectIdFromServerName()
     self.assertEquals('proj2', project_id)
 
+  def testGetProjectIdFromServerNameIpv4(self):
+    os.environ['SERVER_NAME'] = '0.0.0.0'
+    project_id = mimic.GetProjectIdFromServerName()
+    self.assertEquals(None, project_id)
+
   def CheckProjectIdFromQueryString(self, expected_value, query_string):
     os.environ['QUERY_STRING'] = query_string
     self.assertEquals(expected_value,

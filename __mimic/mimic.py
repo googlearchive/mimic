@@ -259,8 +259,8 @@ def GetProjectIdFromServerName():
 
   For appspot.com domains, a project id is extracted from the left most
   portion of the subdomain. If no subdomain is specified, or if the project
-  id cannot be determined, '' is returned. Finally, when the server name
-  is 'localhost', '' is also returned.
+  id cannot be determined, None is returned. Finally, when the server name
+  is 'localhost' or an IPv4 address, None is also returned.
 
   For custom domains, it's not possible to determine with certainty the
   subdomain vs. the default version hostname. In this case we end up using
@@ -276,6 +276,7 @@ def GetProjectIdFromServerName():
   www.mydomain.com                     ->  'www'
   proj2.www.mydomain.com               ->  'proj2'
   localhost                            ->  None
+  192.168.0.1                          ->  None
 
   Returns:
     The project id or None.
@@ -289,6 +290,7 @@ def GetProjectIdFromServerName():
   server_name = server_name.replace('-dot-', '.')
 
   if (server_name == 'localhost' or
+      common.IPV4_REGEX.match(server_name) or
       server_name == app_identity.get_default_version_hostname()):
     return None
 

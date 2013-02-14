@@ -37,6 +37,9 @@ CONTROL_PREFIX = '/_ah/mimic'
 # URL path prefix for accessing a Python shell
 SHELL_PREFIX = '/_ah/shell'
 
+# TODO: consider https://code.google.com/p/ipaddr-py/
+IPV4_REGEX = re.compile('^(\d{1,3}\.){3}\d{1,3}$')
+
 # memcache key space
 MEMCACHE_MANIFEST_PREFIX = 'manifest:'
 MEMCACHE_FILE_KEY_PREFIX = 'file:'
