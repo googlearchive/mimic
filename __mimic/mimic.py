@@ -88,8 +88,8 @@ _NOT_FOUND_PAGE = """
 </html>
 """
 
-# most recently seen query string project_id (dev_appserver only)
-_most_recent_query_string_project_id = None
+# store most recently seen project_id (dev_appserver only)
+_dev_appserver_state = {}
 
 
 def RespondWithStatus(status_code, expiration_s=0,
@@ -297,28 +297,18 @@ def GetProjectIdFromServerName():
   return server_name.split('.')[0]
 
 
-def GetProjectIdFromDevAppserverQueryParam():
-  """Returns the project id from the (or a recent) project id query param.
-
-  In the dev_appserver, we need to support running any one of the (potentially)
-  many cloud playground projects. Because subdomains would be extremely painful
-  to use in the localhost environment, we extract the project id from the
-  current query string, or the most recently provided query string project id.
-  In production, we use subdomains, so always return None.
+def GetProjectIdFromQueryParam():
+  """Returns the project id from the query string.
 
   Returns:
     The project id or None.
   """
-  global _most_recent_query_string_project_id  # pylint: disable-msg=W0603
-  if not common.IsDevMode():
-    return None
+
   qs = os.environ.get('QUERY_STRING')
-  if qs:
-    params = dict(urlparse.parse_qsl(qs, strict_parsing=True))
-    _most_recent_query_string_project_id = params.get(
-        common.config.PROJECT_ID_QUERY_PARAM,
-        _most_recent_query_string_project_id)
-  return _most_recent_query_string_project_id
+  if not qs:
+    return None
+  params = dict(urlparse.parse_qsl(qs, strict_parsing=True))
+  return params.get(common.config.PROJECT_ID_QUERY_PARAM)
 
 
 def GetProjectIdFromPathInfo(path_info):
@@ -333,7 +323,9 @@ def GetProjectId():
   """Returns the project id from the HTTP request.
 
   A number of sources for project id are tried in order. See implementation
-  details.
+  details. In addition, note the special dev_appserver case where the project id
+  extracted from the query string is returned in subsequent requests if the
+  project id cannot be otherwise determined.
 
   Returns:
     The project id or None.
@@ -342,13 +334,20 @@ def GetProjectId():
   project_id = os.environ.get(_HTTP_X_APPENGINE_CURRENT_NAMESPACE)
   if project_id:
     return project_id
+  project_id = GetProjectIdFromQueryParam()
+  if project_id:
+    if common.IsDevMode():
+      _dev_appserver_state['project_id'] = project_id
+    return project_id
   project_id = GetProjectIdFromPathInfo(os.environ['PATH_INFO'])
   if project_id:
     return project_id
   project_id = GetProjectIdFromServerName()
   if project_id:
     return project_id
-  return GetProjectIdFromDevAppserverQueryParam()
+  if common.IsDevMode():
+    project_id = _dev_appserver_state.get('project_id')
+  return project_id
 
 
 def GetNamespace():

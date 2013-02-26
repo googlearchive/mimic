@@ -200,7 +200,7 @@ class MimicTest(unittest.TestCase):
     # TODO: add tests for app.yaml 'secure: always'
     os.environ['wsgi.url_scheme'] = 'http'
     os.environ['QUERY_STRING'] = ''
-    mimic._most_recent_query_string_project_id = None
+    mimic._dev_appserver_state = {}
     # files that will be part of the tree
     self._files = {}
     # these are filled in from mimic's response during CallMimic()
@@ -528,12 +528,13 @@ class MimicTest(unittest.TestCase):
 
   def CheckProjectIdFromQueryString(self, expected_value, query_string):
     os.environ['QUERY_STRING'] = query_string
-    self.assertEquals(expected_value,
-                      mimic.GetProjectIdFromDevAppserverQueryParam())
+    # we call GetProjectId rather than GetProjectIdFromQueryParam
+    # so that mimic._dev_appserver_state is acccessed
+    self.assertEquals(expected_value, mimic.GetProjectId())
 
   def testGetProjectIdFromQueryParam(self):
     self.assertEquals('_mimic_project', common.config.PROJECT_ID_QUERY_PARAM)
-    self.assertEquals(None, mimic.GetProjectIdFromDevAppserverQueryParam())
+    self.assertEquals(None, mimic.GetProjectIdFromQueryParam())
     self.CheckProjectIdFromQueryString(None, '')
     self.CheckProjectIdFromQueryString(None, 'foo=')
     self.CheckProjectIdFromQueryString(None, 'foo=bar')
@@ -545,17 +546,29 @@ class MimicTest(unittest.TestCase):
     self.CheckProjectIdFromQueryString('proj45',
                                        'foo=bar&_mimic_project=proj45&a=b')
 
+  def testGetProjectIdFromCurrentQueryParam(self):
+    os.environ['SERVER_SOFTWARE'] = 'Production/check-project-id'
+    self.assertEquals(None, mimic._dev_appserver_state.get('project_id'))
+    self.assertEquals('_mimic_project', common.config.PROJECT_ID_QUERY_PARAM)
+    self.assertEquals(None, mimic.GetProjectIdFromQueryParam())
+    self.CheckProjectIdFromQueryString('proj42', '_mimic_project=proj42')
+    self.assertEquals(None, mimic._dev_appserver_state.get('project_id'))
+    self.CheckProjectIdFromQueryString(None, '')
+    self.assertEquals(None, mimic._dev_appserver_state.get('project_id'))
+    self.CheckProjectIdFromQueryString(None, '_mimic_project=')
+    self.assertEquals(None, mimic._dev_appserver_state.get('project_id'))
+
   def testGetProjectIdFromRecentQueryParam(self):
     os.environ['SERVER_SOFTWARE'] = 'Development/check-project-id'
-    self.assertEquals(None, mimic._most_recent_query_string_project_id)
+    self.assertEquals(None, mimic._dev_appserver_state.get('project_id'))
     self.assertEquals('_mimic_project', common.config.PROJECT_ID_QUERY_PARAM)
-    self.assertEquals(None, mimic.GetProjectIdFromDevAppserverQueryParam())
+    self.assertEquals(None, mimic.GetProjectIdFromQueryParam())
     self.CheckProjectIdFromQueryString('proj42', '_mimic_project=proj42')
-    self.assertEquals('proj42', mimic._most_recent_query_string_project_id)
+    self.assertEquals('proj42', mimic._dev_appserver_state.get('project_id'))
     self.CheckProjectIdFromQueryString('proj42', '')
-    self.assertEquals('proj42', mimic._most_recent_query_string_project_id)
+    self.assertEquals('proj42', mimic._dev_appserver_state.get('project_id'))
     self.CheckProjectIdFromQueryString('proj42', '_mimic_project=')
-    self.assertEquals('proj42', mimic._most_recent_query_string_project_id)
+    self.assertEquals('proj42', mimic._dev_appserver_state.get('project_id'))
 
   def testGetProjectIdFromPathInfo(self):
     self.assertEquals('/_mimic/p/(.+?)/',
@@ -568,8 +581,8 @@ class MimicTest(unittest.TestCase):
     self.assertEquals('foo',
                       mimic.GetProjectIdFromPathInfo('/_mimic/p/foo/bar/'))
 
-  def CheckProjectId(self, expected_value, header_value, path_info_value,
-                     server_name_value, query_value, recent_query_value,
+  def CheckProjectId(self, expected_value, header_value, query_value,
+                     path_info_value, server_name_value, recent_query_value,
                      is_dev_mode):
     if header_value:
       os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = header_value
@@ -592,7 +605,7 @@ class MimicTest(unittest.TestCase):
     else:
       os.environ['QUERY_STRING'] = ''
 
-    mimic._most_recent_query_string_project_id = recent_query_value or None
+    mimic._dev_appserver_state['project_id'] = recent_query_value or None
 
     if is_dev_mode:
       os.environ['SERVER_SOFTWARE'] = 'Development/check-project-id'
@@ -602,18 +615,27 @@ class MimicTest(unittest.TestCase):
     self.assertEquals(expected_value, mimic.GetProjectId())
 
   def testGetProjectId(self):
-    self.CheckProjectId('hr', 'hr', 'ph', 'sr', 'qy', 'rt', False)
-    self.CheckProjectId('ph', None, 'ph', 'sr', 'qy', 'rt', False)
-    self.CheckProjectId('sr', None, None, 'sr', 'qy', 'rt', False)
-    self.CheckProjectId(None, None, None, None, 'qy', 'rt', False)
+    """Verify how the project id is determined.
+
+    In priority order mimic should try:
+    1. 'X-AppEngine-Current-Namespace' request header
+    2. '_mimic_project' query parameter
+    3. '/_mimic/p/.../' URI path info
+    4. server name
+    5. most recently encountered query parameter (dev_appserver only)
+    """
+    self.CheckProjectId('hr', 'hr', 'qy', 'ph', 'sr', 'rt', False)
+    self.CheckProjectId('qy', None, 'qy', 'ph', 'sr', 'rt', False)
+    self.CheckProjectId('ph', None, None, 'ph', 'sr', 'rt', False)
+    self.CheckProjectId('sr', None, None, None, 'sr', 'rt', False)
     self.CheckProjectId(None, None, None, None, None, 'rt', False)
     self.CheckProjectId(None, None, None, None, None, None, False)
 
-    # the query string parameter is a dev_appserver only feature
-    self.CheckProjectId('hr', 'hr', 'ph', 'sr', 'qy', 'rt', True)
-    self.CheckProjectId('ph', None, 'ph', 'sr', 'qy', 'rt', True)
-    self.CheckProjectId('sr', None, None, 'sr', 'qy', 'rt', True)
-    self.CheckProjectId('qy', None, None, None, 'qy', 'rt', True)
+    # the query string parameter is sticky only in the dev_appserver
+    self.CheckProjectId('hr', 'hr', 'qy', 'ph', 'sr', 'rt', True)
+    self.CheckProjectId('qy', None, 'qy', 'ph', 'sr', 'rt', True)
+    self.CheckProjectId('ph', None, None, 'ph', 'sr', 'rt', True)
+    self.CheckProjectId('sr', None, None, None, 'sr', 'rt', True)
     self.CheckProjectId('rt', None, None, None, None, 'rt', True)
     self.CheckProjectId(None, None, None, None, None, None, True)
 
