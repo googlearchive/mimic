@@ -86,8 +86,7 @@ class ControlAppTest(unittest.TestCase):
           /foo or /foo?x=123
       headers: The HTTP request headers to be sent.
       method: The HTTP method, such as GET, POST, OPTIONS, PUT, DELETE
-      data: Optional data to be sent as the body of a POST (this also forces
-          the HTTP method to be POST).
+      data: Optional data to be sent as the body of a POST or PUT
       form: True indicates application/x-www-form-urlencoded should be used
           as the content type, otherwise the default of test/plain is used.
     """
@@ -103,10 +102,9 @@ class ControlAppTest(unittest.TestCase):
     if headers:
       for k, v in headers.items():
         env['HTTP_' + k.upper().replace('-', '_')] = v
-    # handle POST data
+    # handle request data
     if data is not None:
       input_stream = cStringIO.StringIO(data)
-      method = 'POST'
       if form:
         env['CONTENT_TYPE'] = 'application/x-www-form-urlencoded'
       else:
@@ -162,7 +160,7 @@ class ControlAppTest(unittest.TestCase):
     headers = {
         'Access-Control-Allow-Credentials': 'true',
         'Access-Control-Allow-Headers': 'Origin, Accept',
-        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Methods': 'GET, PUT',
         'Access-Control-Allow-Origin': 'http://localhost:8080',
         'Access-Control-Max-Age': '600',
         'Content-Length': '0',
@@ -230,13 +228,13 @@ class ControlAppTest(unittest.TestCase):
         return True
 
     self.setUpApplication(MutableTree())
-    self.RunWSGI('/_ah/mimic/file?path=foo.html', data='abc')
+    self.RunWSGI('/_ah/mimic/file?path=foo.html', method='PUT', data='abc')
     self.Check(httplib.OK)
     self.assertEqual(self._tree.contents, 'abc')
     self.assertEqual(self._tree.path, 'foo.html')
 
   def testSetFileBadRequest(self):
-    self.RunWSGI('/_ah/mimic/file', data='123')
+    self.RunWSGI('/_ah/mimic/file', method='PUT', data='123')
     self.Check(httplib.BAD_REQUEST)
 
   def testSetFileImmutable(self):
@@ -245,11 +243,11 @@ class ControlAppTest(unittest.TestCase):
         return False
 
     self.setUpApplication(ImmutableTree())
-    self.RunWSGI('/_ah/mimic/file?path=foo.html', data='abc')
+    self.RunWSGI('/_ah/mimic/file?path=foo.html', method='PUT', data='abc')
     self.Check(httplib.BAD_REQUEST)
 
   def testClear(self):
-    self.RunWSGI('/_ah/mimic/clear', data='')
+    self.RunWSGI('/_ah/mimic/clear', method='POST', data='')
     self.Check(httplib.OK)
     self.assertEquals([], self._tree.ListDirectory('/'))
 
@@ -259,7 +257,7 @@ class ControlAppTest(unittest.TestCase):
         return False
 
     self.setUpApplication(ImmutableTree())
-    self.RunWSGI('/_ah/mimic/clear', data='')
+    self.RunWSGI('/_ah/mimic/clear', method='POST', data='')
     self.Check(httplib.BAD_REQUEST)
 
   def testLog(self):
@@ -277,7 +275,7 @@ class ControlAppTest(unittest.TestCase):
 bar
 
 foo""")
-    self.RunWSGI('/_ah/mimic/index', data='')
+    self.RunWSGI('/_ah/mimic/index', method='POST', data='')
     self.Check(httplib.OK, output="""indexes:
 
 """)

@@ -50,6 +50,7 @@ class _TreeHandler(webapp.RequestHandler):
 class _ClearHandler(_TreeHandler):
   """Handler for clearing all files."""
 
+  # TODO: add CORS support
   def post(self):  # pylint: disable-msg=C6409
     """Clear all files."""
     if self._tree.IsMutable():
@@ -74,7 +75,7 @@ class _FileHandler(_TreeHandler):
       return
     # OK, CORS access allowed
     self.response.headers['Access-Control-Allow-Origin'] = origin
-    self.response.headers['Access-Control-Allow-Methods'] = 'GET'
+    self.response.headers['Access-Control-Allow-Methods'] = 'GET, PUT'
     self.response.headers['Access-Control-Max-Age'] = '600'
     allowed_headers = common.config.CORS_ALLOWED_HEADERS
     self.response.headers['Access-Control-Allow-Headers'] = allowed_headers
@@ -102,8 +103,9 @@ class _FileHandler(_TreeHandler):
     self.response.headers['X-Content-Type-Options'] = 'nosniff'
     self.response.out.write(data)
 
-  def post(self):  # pylint: disable-msg=C6409
+  def put(self):  # pylint: disable-msg=C6409
     """Set a file's contents."""
+    self._CheckCors()
     path = self.request.get('path')
     if not path or not self._tree.IsMutable():
       self.error(httplib.BAD_REQUEST)
@@ -128,6 +130,7 @@ class _IndexHandler(webapp.RequestHandler):
     # here.
     self.response.out.write(composite_query.GetIndexYaml())
 
+  # TODO: add CORS support
   def post(self):  # pylint: disable-msg=C6409
     # clear and then return the cleared index spec
     composite_query.ClearIndexYaml()
@@ -209,6 +212,7 @@ def ControlRequestRequiresTree(path_info):
   return False
 
 
+# TODO: protect against XSRF
 def MakeControlApp(tree, create_channel_fn=channel.create_channel):
   """Create and return a WSGI application for controlling Mimic."""
   # standard handlers
