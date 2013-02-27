@@ -46,22 +46,6 @@ class _TreeHandler(webapp.RequestHandler):
     webapp.RequestHandler.initialize(self, request, response)
     self._tree = self.app.config.get('tree')
 
-
-class _ClearHandler(_TreeHandler):
-  """Handler for clearing all files."""
-
-  # TODO: add CORS support
-  def post(self):  # pylint: disable-msg=C6409
-    """Clear all files."""
-    if self._tree.IsMutable():
-      self._tree.Clear()
-    else:
-      self.error(httplib.BAD_REQUEST)
-
-
-class _FileHandler(_TreeHandler):
-  """Handler for getting/setting files."""
-
   def _CheckCors(self):
     origin = self.request.headers.get('Origin')
     # If not a CORS request, do nothing
@@ -75,19 +59,38 @@ class _FileHandler(_TreeHandler):
       return
     # OK, CORS access allowed
     self.response.headers['Access-Control-Allow-Origin'] = origin
-    self.response.headers['Access-Control-Allow-Methods'] = 'GET, PUT'
+    self.response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT'
     self.response.headers['Access-Control-Max-Age'] = '600'
     allowed_headers = common.config.CORS_ALLOWED_HEADERS
     self.response.headers['Access-Control-Allow-Headers'] = allowed_headers
     self.response.headers['Access-Control-Allow-Credentials'] = 'true'
 
-  def options(self):
-    """Allow CORS requests."""
+  def dispatch(self):
     self._CheckCors()
+    super(_TreeHandler, self).dispatch()
+
+  def options(self):
+    """Handle OPTIONS requests."""
+    # allow CORS requests
+    pass
+
+
+class _ClearHandler(_TreeHandler):
+  """Handler for clearing all files."""
+
+  def post(self):  # pylint: disable-msg=C6409
+    """Clear all files."""
+    if self._tree.IsMutable():
+      self._tree.Clear()
+    else:
+      self.error(httplib.BAD_REQUEST)
+
+
+class _FileHandler(_TreeHandler):
+  """Handler for getting/setting files."""
 
   def get(self):  # pylint: disable-msg=C6409
     """Get a file's contents."""
-    self._CheckCors()
     self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
     path = self.request.get('path')
     if not path:
@@ -105,7 +108,6 @@ class _FileHandler(_TreeHandler):
 
   def put(self):  # pylint: disable-msg=C6409
     """Set a file's contents."""
-    self._CheckCors()
     path = self.request.get('path')
     if not path or not self._tree.IsMutable():
       self.error(httplib.BAD_REQUEST)
@@ -130,7 +132,6 @@ class _IndexHandler(webapp.RequestHandler):
     # here.
     self.response.out.write(composite_query.GetIndexYaml())
 
-  # TODO: add CORS support
   def post(self):  # pylint: disable-msg=C6409
     # clear and then return the cleared index spec
     composite_query.ClearIndexYaml()
