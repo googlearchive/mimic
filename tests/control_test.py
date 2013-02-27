@@ -160,7 +160,7 @@ class ControlAppTest(unittest.TestCase):
     headers = {
         'Access-Control-Allow-Credentials': 'true',
         'Access-Control-Allow-Headers': 'Origin, Accept',
-        'Access-Control-Allow-Methods': 'GET, PUT',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT',
         'Access-Control-Allow-Origin': 'http://localhost:8080',
         'Access-Control-Max-Age': '600',
         'Content-Length': '0',
@@ -217,6 +217,32 @@ class ControlAppTest(unittest.TestCase):
     }
     self.Check(httplib.BAD_REQUEST, headers=headers,
                output='Path must be specified')
+
+  def testDeletePath(self):
+    class MutableTree(object):
+      def DeletePath(self, path):
+        self.path = path
+
+      def IsMutable(self):
+        return True
+
+    self.setUpApplication(MutableTree())
+    self.RunWSGI('/_ah/mimic/delete?path=foo.html', method='POST', data='')
+    self.Check(httplib.OK)
+    self.assertEqual(self._tree.path, 'foo.html')
+
+  def testDeletePathBadRequest(self):
+    self.RunWSGI('/_ah/mimic/delete', method='POST', data='123')
+    self.Check(httplib.BAD_REQUEST)
+
+  def testDeletePathImmutable(self):
+    class ImmutableTree(object):
+      def IsMutable(self):
+        return False
+
+    self.setUpApplication(ImmutableTree())
+    self.RunWSGI('/_ah/mimic/delete?path=foo.html', method='POST', data='')
+    self.Check(httplib.BAD_REQUEST)
 
   def testSetFile(self):
     class MutableTree(object):

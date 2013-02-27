@@ -32,6 +32,7 @@ from google.appengine.ext import webapp
 
 _CONTROL_PATHS_REQUIRING_TREE = [
     common.CONTROL_PREFIX + '/clear',
+    common.CONTROL_PREFIX + '/delete',
     common.CONTROL_PREFIX + '/file'
     ]
 _LOGGING_CLIENT_ID = 'logging'
@@ -84,6 +85,18 @@ class _ClearHandler(_TreeHandler):
       self._tree.Clear()
     else:
       self.error(httplib.BAD_REQUEST)
+
+
+class _DeleteHandler(_TreeHandler):
+  """Handler for delete files/directories."""
+
+  def post(self):  # pylint: disable-msg=C6409
+    """Delete all files under the specified path."""
+    path = self.request.get('path')
+    if not path or not self._tree.IsMutable():
+      self.error(httplib.BAD_REQUEST)
+      return
+    self._tree.DeletePath(path)
 
 
 class _FileHandler(_TreeHandler):
@@ -219,6 +232,7 @@ def MakeControlApp(tree, create_channel_fn=channel.create_channel):
   # standard handlers
   handlers = [
       ('/clear', _ClearHandler),
+      ('/delete', _DeleteHandler),
       ('/file', _FileHandler),
       ('/index', _IndexHandler),
       ('/log', _LogRequestHandler),
