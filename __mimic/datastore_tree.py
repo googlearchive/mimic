@@ -40,6 +40,7 @@ class DatastoreTree(common.Tree):
   """An implementation of Tree backed by Datastore."""
 
   def __init__(self, namespace=''):
+    super(DatastoreTree, self).__init__(namespace)
     # Having a root entity key allows us to use ancestor queries for strong
     # consistency in the High Replication Datastore
     assert namespace is not None
