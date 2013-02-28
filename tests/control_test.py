@@ -272,6 +272,41 @@ class ControlAppTest(unittest.TestCase):
     self.RunWSGI('/_ah/mimic/file?path=foo.html', method='PUT', data='abc')
     self.Check(httplib.BAD_REQUEST)
 
+  def testMoveFile(self):
+    class MutableTree(object):
+      def MoveFile(self, path, newpath):
+        self.path = path
+        self.newpath = newpath
+
+      def IsMutable(self):
+        return True
+
+    self.setUpApplication(MutableTree())
+    self.RunWSGI('/_ah/mimic/move?path=foo.html&newpath=bar.txt',
+                 method='POST', data='')
+    self.Check(httplib.OK)
+    self.assertEqual(self._tree.path, 'foo.html')
+    self.assertEqual(self._tree.newpath, 'bar.txt')
+
+  def testMoveFileBadRequest(self):
+    self.RunWSGI('/_ah/mimic/move', method='POST', data='')
+    self.Check(httplib.BAD_REQUEST)
+
+  def testMoveFileSamePathBadRequest(self):
+    self.RunWSGI('/_ah/mimic/move?path=foo.html&newpath=foo.html',
+                 method='POST', data='')
+    self.Check(httplib.BAD_REQUEST)
+
+  def testMoveFileImmutable(self):
+    class ImmutableTree(object):
+      def IsMutable(self):
+        return False
+
+    self.setUpApplication(ImmutableTree())
+    self.RunWSGI('/_ah/mimic/move?path=foo.html&newpath=bar.txt',
+                 method='POST', data='')
+    self.Check(httplib.BAD_REQUEST)
+
   def testClear(self):
     self.RunWSGI('/_ah/mimic/clear', method='POST', data='')
     self.Check(httplib.OK)

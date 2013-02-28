@@ -33,8 +33,9 @@ from google.appengine.ext import webapp
 _CONTROL_PATHS_REQUIRING_TREE = [
     common.CONTROL_PREFIX + '/clear',
     common.CONTROL_PREFIX + '/delete',
-    common.CONTROL_PREFIX + '/file'
-    ]
+    common.CONTROL_PREFIX + '/file',
+    common.CONTROL_PREFIX + '/move',
+]
 _LOGGING_CLIENT_ID = 'logging'
 _MAX_LOG_MESSAGE = 1024  # will keep the channel message under the 32K Limit
 
@@ -126,6 +127,22 @@ class _FileHandler(_TreeHandler):
       self.error(httplib.BAD_REQUEST)
       return
     self._tree.SetFile(path, self.request.body)
+
+
+class _MoveHandler(_TreeHandler):
+  """Handler for moving files."""
+
+  def post(self):  # pylint: disable-msg=C6409
+    """Rename file with the specified path."""
+    path = self.request.get('path')
+    newpath = self.request.get('newpath')
+    if not path or not self._tree.IsMutable():
+      self.error(httplib.BAD_REQUEST)
+      return
+    if not newpath or newpath == path:
+      self.error(httplib.BAD_REQUEST)
+      return
+    self._tree.MoveFile(path, newpath)
 
 
 class _IndexHandler(webapp.RequestHandler):
@@ -236,8 +253,9 @@ def MakeControlApp(tree, create_channel_fn=channel.create_channel):
       ('/file', _FileHandler),
       ('/index', _IndexHandler),
       ('/log', _LogRequestHandler),
+      ('/move', _MoveHandler),
       ('/version_id', _VersionIdHandler),
-      ]
+  ]
   # prepend CONTROL_PREFIX to all handler paths
   handlers = [(common.CONTROL_PREFIX + p, h) for (p, h) in handlers]
   config = {'tree': tree, 'create_channel_fn': create_channel_fn}
