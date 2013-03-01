@@ -1,6 +1,8 @@
 """App Engine configuration file."""
 
 
+import json
+
 from __mimic import datastore_tree
 from __mimic import mimic
 
@@ -8,6 +10,10 @@ from google.appengine.api import app_identity
 
 
 mimic_CREATE_TREE_FUNC = datastore_tree.DatastoreTree
+
+mimic_JSON_ENCODER = json.JSONEncoder()
+mimic_JSON_ENCODER.indent = 4
+mimic_JSON_ENCODER.sort_keys = True
 
 hostname = app_identity.get_default_version_hostname()
 mimic_CORS_ALLOWED_ORIGINS = [

@@ -33,6 +33,7 @@ from google.appengine.ext import webapp
 _CONTROL_PATHS_REQUIRING_TREE = [
     common.CONTROL_PREFIX + '/clear',
     common.CONTROL_PREFIX + '/delete',
+    common.CONTROL_PREFIX + '/dir',
     common.CONTROL_PREFIX + '/file',
     common.CONTROL_PREFIX + '/move',
 ]
@@ -98,6 +99,19 @@ class _DeleteHandler(_TreeHandler):
       self.error(httplib.BAD_REQUEST)
       return
     self._tree.DeletePath(path)
+
+
+class _DirHandler(_TreeHandler):
+  """Handler for enumerating files."""
+
+  def get(self):  # pylint: disable-msg=C6409
+    """Retrieve list of files under the specified path."""
+    path = self.request.get('path')
+    paths = self._tree.ListDirectory(path)
+    files = [{'path': path, 'mime_type': common.GuessMimeType(path)}
+             for path in paths]
+    self.response.headers['Content-Type'] = 'application/json'
+    self.response.out.write(common.config.JSON_ENCODER.encode(files))
 
 
 class _FileHandler(_TreeHandler):
@@ -173,6 +187,7 @@ class _LogRequestHandler(webapp.RequestHandler):
 
   def __init__(self, request, response):
     """Initializes this request handler with the given Request and Response."""
+    super(_LogRequestHandler, self).__init__(request, response)
     webapp.RequestHandler.initialize(self, request, response)
     self._create_channel_fn = self.app.config.get('create_channel_fn')
 
@@ -250,6 +265,7 @@ def MakeControlApp(tree, create_channel_fn=channel.create_channel):
   handlers = [
       ('/clear', _ClearHandler),
       ('/delete', _DeleteHandler),
+      ('/dir', _DirHandler),
       ('/file', _FileHandler),
       ('/index', _IndexHandler),
       ('/log', _LogRequestHandler),

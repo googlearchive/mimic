@@ -57,6 +57,12 @@ class ControlAppTest(unittest.TestCase):
     self._headers = None
     self._output = ''
 
+    #consistent JSON output for tests
+    common.config.JSON_ENCODER = json.JSONEncoder()
+    common.config.JSON_ENCODER.indent = None
+    common.config.JSON_ENCODER.sort_keys = True
+
+
   def setUpApplication(self, tree=None):
     """Sets up the control application and its tree."""
     if tree:
@@ -127,10 +133,12 @@ class ControlAppTest(unittest.TestCase):
     """
     actual = int(self._status.split(' ', 1)[0])
     self.assertEquals(status_code, actual)
-    if output is not None:
-      self.assertEquals(output, self._output)
     if headers is not None:
       self.assertEquals(headers, self._headers)
+    if output is not None:
+      if self._headers.get('Content-Type') == 'application/json':
+        self._output = json.loads(self._output)
+      self.assertEquals(output, self._output)
 
   def testGetFileContents(self):
     self._tree.SetFile('foo.html', '123')
@@ -243,6 +251,26 @@ class ControlAppTest(unittest.TestCase):
     self.setUpApplication(ImmutableTree())
     self.RunWSGI('/_ah/mimic/delete?path=foo.html', method='POST', data='')
     self.Check(httplib.BAD_REQUEST)
+
+  def testDirPath(self):
+    class FakeTree(object):
+      def ListDirectory(self, path):
+        self.path = path
+        return ['a.txt', 'foo.bar']
+
+    self.setUpApplication(FakeTree())
+    self.RunWSGI('/_ah/mimic/dir', method='GET')
+    expected_headers = {
+        'Content-Length': '123',
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+    }
+    expected_response = [
+        {'mime_type': 'text/plain; charset=utf-8', 'path': 'a.txt' },
+        {'mime_type': 'application/octet-stream', 'path': 'foo.bar' },
+    ]
+    self.Check(httplib.OK, expected_headers, expected_response)
+    self.assertEqual(self._tree.path, '')
 
   def testSetFile(self):
     class MutableTree(object):

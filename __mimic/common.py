@@ -18,6 +18,7 @@
 
 
 
+import json
 import logging
 import mimetypes
 import os
@@ -62,7 +63,9 @@ config = lib_config.register('mimic', {
     # allowed CORS origins
     'CORS_ALLOWED_ORIGINS': [],
     # allowed CORS HTTP headers
-    'CORS_ALLOWED_HEADERS': 'Origin, Accept'
+    'CORS_ALLOWED_HEADERS': 'Origin, Accept',
+    # shared JSON encoder, for optional pretty printing
+    'JSON_ENCODER': json.JSONEncoder(),
     })
 
 # supplement mimetypes.guess_type()'s limited guessing abilities

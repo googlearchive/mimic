@@ -117,9 +117,9 @@ class DatastoreTree(common.Tree):
 
   def ListDirectory(self, path):
     path = self._NormalizeDirectoryPath(path)
-    paths = set()
     # TODO: optimize by using a more structured tree representation
     keys = _AhMimicFile.query(ancestor=self.root).iter(keys_only=True)
+    paths = set()
     for key in keys:
       entry_path = key.id()
       # 'path is None' means get all files recursively
