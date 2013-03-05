@@ -107,6 +107,7 @@ def GetDefaultEnvironment():
   return {
       'REQUEST_METHOD': 'GET',
       'wsgi.url_scheme': 'http',
+      'HTTP_HOST': 'localhost:8080',
       'SERVER_NAME': 'localhost',
       'SERVER_PORT': '8080',
   }

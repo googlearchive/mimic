@@ -58,7 +58,7 @@ class _TreeHandler(webapp.RequestHandler):
     if origin not in common.config.CORS_ALLOWED_ORIGINS:
       self.response.set_status(httplib.UNAUTHORIZED)
       self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
-      self.response.write('Unrecognized origin {}'.format(origin))
+      self.response.write('Disallowed origin {}'.format(origin))
       return
     # OK, CORS access allowed
     self.response.headers['Access-Control-Allow-Origin'] = origin
@@ -69,6 +69,13 @@ class _TreeHandler(webapp.RequestHandler):
     self.response.headers['Access-Control-Allow-Credentials'] = 'true'
 
   def dispatch(self):
+    if (common.config.ALLOWED_USER_CONTENT_HOSTS and
+        self.request.host not in common.config.ALLOWED_USER_CONTENT_HOSTS):
+      self.response.set_status(httplib.FORBIDDEN)
+      self.response.headers['Content-Type'] = 'text/plain; charset=utf-8'
+      self.response.write('User content forbidden on HTTP host {}'
+                          .format(self.request.host))
+      return
     self._CheckCors()
     super(_TreeHandler, self).dispatch()
 

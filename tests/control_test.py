@@ -62,6 +62,8 @@ class ControlAppTest(unittest.TestCase):
     common.config.JSON_ENCODER.indent = None
     common.config.JSON_ENCODER.sort_keys = True
 
+    common.config.ALLOWED_USER_CONTENT_HOSTS = None
+
 
   def setUpApplication(self, tree=None):
     """Sets up the control application and its tree."""
@@ -84,7 +86,7 @@ class ControlAppTest(unittest.TestCase):
     self._output += data
 
   def RunWSGI(self, path_query, headers=[], method='GET', data=None,
-              form=False):
+              form=False, host=None):
     """Invoke the application on a given path/query.
 
     Args:
@@ -97,6 +99,8 @@ class ControlAppTest(unittest.TestCase):
           as the content type, otherwise the default of test/plain is used.
     """
     env = test_util.GetDefaultEnvironment()
+    if host:
+      env['HTTP_HOST'] = host
     # setup path and query
     if '?' in path_query:
       path, query = path_query.split('?', 1)
@@ -151,6 +155,29 @@ class ControlAppTest(unittest.TestCase):
     }
     self.Check(httplib.OK, headers=headers, output='123')
 
+  def testGetFileContentsAllowedHost(self):
+    self._tree.SetFile('foo.html', '123')
+    common.config.ALLOWED_USER_CONTENT_HOSTS = ['allowed-host.com']
+    self.RunWSGI('/_ah/mimic/file?path=foo.html', host='allowed-host.com')
+    headers = {
+        'Content-Length': '3',
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+    }
+    self.Check(httplib.OK, headers=headers)
+
+  def testGetFileContentsDisallowedHost(self):
+    self._tree.SetFile('foo.html', '123')
+    common.config.ALLOWED_USER_CONTENT_HOSTS = ['allowed-host.com']
+    self.RunWSGI('/_ah/mimic/file?path=foo.html', host='not-allowed-host.com')
+    headers = {
+        'Content-Length': '56',
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+    }
+    self.Check(httplib.FORBIDDEN, headers=headers)
+
   def testGetFileContentsAlternateContentType(self):
     self._tree.SetFile('foo.css', 'pretty')
     self.RunWSGI('/_ah/mimic/file?path=foo.css')
@@ -182,7 +209,7 @@ class ControlAppTest(unittest.TestCase):
     self.RunWSGI('/_ah/mimic/file?path=foo.txt', method='OPTIONS',
                  headers={'Origin': 'http://otherdomain.com'})
     headers = {
-        'Content-Length': '42',
+        'Content-Length': '40',
         'Content-Type': 'text/plain; charset=utf-8',
         'Cache-Control': 'no-cache',
     }
