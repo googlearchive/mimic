@@ -29,7 +29,6 @@ WSGI framework until it is determined that the request is a control request.
 
 import httplib
 import logging
-import mimetypes
 import os
 import rfc822
 import sys

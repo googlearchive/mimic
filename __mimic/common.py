@@ -38,8 +38,8 @@ CONTROL_PREFIX = '/_ah/mimic'
 # URL path prefix for accessing a Python shell
 SHELL_PREFIX = '/_ah/shell'
 
-# TODO: consider https://code.google.com/p/ipaddr-py/
-IPV4_REGEX = re.compile('^(\d{1,3}\.){3}\d{1,3}$')
+# TODO(fredsa): consider https://code.google.com/p/ipaddr-py/
+IPV4_REGEX = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
 
 # memcache key space
 MEMCACHE_MANIFEST_PREFIX = 'manifest:'
@@ -323,6 +323,6 @@ def GuessMimeType(filename):
                     filename, extension)
   if not mime_type:
     mime_type = 'application/octet-stream'
-  if (mime_type.startswith('text/') and '; charset=' not in mime_type):
-    mime_type = mime_type + '; charset=utf-8'
+  if mime_type.startswith('text/') and '; charset=' not in mime_type:
+    mime_type += '; charset=utf-8'
   return mime_type

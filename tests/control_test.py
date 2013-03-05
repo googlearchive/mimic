@@ -57,13 +57,12 @@ class ControlAppTest(unittest.TestCase):
     self._headers = None
     self._output = ''
 
-    #consistent JSON output for tests
+    # consistent JSON output for tests
     common.config.JSON_ENCODER = json.JSONEncoder()
     common.config.JSON_ENCODER.indent = None
     common.config.JSON_ENCODER.sort_keys = True
 
     common.config.ALLOWED_USER_CONTENT_HOSTS = None
-
 
   def setUpApplication(self, tree=None):
     """Sets up the control application and its tree."""
@@ -85,7 +84,7 @@ class ControlAppTest(unittest.TestCase):
     """Used by StartResponse to accumlate response data."""
     self._output += data
 
-  def RunWSGI(self, path_query, headers=[], method='GET', data=None,
+  def RunWSGI(self, path_query, headers=None, method='GET', data=None,
               form=False, host=None):
     """Invoke the application on a given path/query.
 
@@ -97,6 +96,7 @@ class ControlAppTest(unittest.TestCase):
       data: Optional data to be sent as the body of a POST or PUT
       form: True indicates application/x-www-form-urlencoded should be used
           as the content type, otherwise the default of test/plain is used.
+      host: The HTTP host to use for the request.
     """
     env = test_util.GetDefaultEnvironment()
     if host:
@@ -293,8 +293,8 @@ class ControlAppTest(unittest.TestCase):
         'Cache-Control': 'no-cache',
     }
     expected_response = [
-        {'mime_type': 'text/plain; charset=utf-8', 'path': 'a.txt' },
-        {'mime_type': 'application/octet-stream', 'path': 'foo.bar' },
+        {'mime_type': 'text/plain; charset=utf-8', 'path': 'a.txt'},
+        {'mime_type': 'application/octet-stream', 'path': 'foo.bar'},
     ]
     self.Check(httplib.OK, expected_headers, expected_response)
     self.assertEqual(self._tree.path, '')

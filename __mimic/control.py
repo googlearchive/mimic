@@ -68,7 +68,7 @@ class _TreeHandler(webapp.RequestHandler):
     self.response.headers['Access-Control-Allow-Headers'] = allowed_headers
     self.response.headers['Access-Control-Allow-Credentials'] = 'true'
 
-  def dispatch(self):
+  def dispatch(self):  # pylint: disable-msg=g-bad-name
     if (common.config.ALLOWED_USER_CONTENT_HOSTS and
         self.request.host not in common.config.ALLOWED_USER_CONTENT_HOSTS):
       self.response.set_status(httplib.FORBIDDEN)
@@ -79,7 +79,7 @@ class _TreeHandler(webapp.RequestHandler):
     self._CheckCors()
     super(_TreeHandler, self).dispatch()
 
-  def options(self):
+  def options(self):  # pylint: disable-msg=g-bad-name
     """Handle OPTIONS requests."""
     # allow CORS requests
     pass
