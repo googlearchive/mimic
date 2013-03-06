@@ -190,6 +190,7 @@ class ControlAppTest(unittest.TestCase):
     self.Check(httplib.OK, headers=headers, output='pretty')
 
   def testCorsPreflightAllowed(self):
+    common.config.CORS_ALLOWED_ORIGINS = ['http://localhost:8080']
     self.RunWSGI('/_ah/mimic/file?path=foo.txt', method='OPTIONS',
                  headers={'Origin': 'http://localhost:8080'})
     headers = {
@@ -200,12 +201,13 @@ class ControlAppTest(unittest.TestCase):
         'Access-Control-Max-Age': '600',
         'Content-Length': '0',
         # App Engine's default MIME type
-        'content-type': 'text/html; charset=utf-8',
+        'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache',
     }
     self.Check(httplib.OK, headers=headers)
 
   def testCorsPreflightDenied(self):
+    common.config.CORS_ALLOWED_ORIGINS = ['http://localhost:8080']
     self.RunWSGI('/_ah/mimic/file?path=foo.txt', method='OPTIONS',
                  headers={'Origin': 'http://otherdomain.com'})
     headers = {
@@ -216,6 +218,7 @@ class ControlAppTest(unittest.TestCase):
     self.Check(httplib.UNAUTHORIZED, headers=headers)
 
   def testCorsAllowHeaders(self):
+    common.config.CORS_ALLOWED_ORIGINS = ['http://localhost:8080']
     self.RunWSGI('/_ah/mimic/file?path=foo.txt', method='OPTIONS',
                  headers={'Origin': 'http://localhost:8080'})
     self.Check(httplib.OK)

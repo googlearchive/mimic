@@ -38,7 +38,7 @@ CONTROL_PREFIX = '/_ah/mimic'
 # URL path prefix for accessing a Python shell
 SHELL_PREFIX = '/_ah/shell'
 
-# TODO(fredsa): consider https://code.google.com/p/ipaddr-py/
+# TODO: consider https://code.google.com/p/ipaddr-py/
 IPV4_REGEX = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
 
 # memcache key space

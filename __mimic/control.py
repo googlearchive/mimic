@@ -76,6 +76,8 @@ class _TreeHandler(webapp.RequestHandler):
       self.response.write('User content forbidden on HTTP host {}'
                           .format(self.request.host))
       return
+    # explicit mixed case 'Content-Type' for dev_appserver tests
+    self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
     self._CheckCors()
     super(_TreeHandler, self).dispatch()
 

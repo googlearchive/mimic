@@ -199,6 +199,7 @@ class MimicTest(unittest.TestCase):
     os.environ['SERVER_NAME'] = 'your-app-id.appspot.com'
     # TODO: add tests for app.yaml 'secure: always'
     os.environ['wsgi.url_scheme'] = 'http'
+    os.environ['PATH_INFO'] = ''
     os.environ['QUERY_STRING'] = ''
     mimic._dev_appserver_state = {}
     # files that will be part of the tree
