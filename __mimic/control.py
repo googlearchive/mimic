@@ -115,7 +115,7 @@ class _DirHandler(_TreeHandler):
 
   def get(self):  # pylint: disable-msg=C6409
     """Retrieve list of files under the specified path."""
-    path = self.request.get('path')
+    path = self.request.get('path', None)
     paths = self._tree.ListDirectory(path)
     files = [{'path': path, 'mime_type': common.GuessMimeType(path)}
              for path in paths]

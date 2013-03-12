@@ -300,7 +300,7 @@ class ControlAppTest(unittest.TestCase):
         {'mime_type': 'application/octet-stream', 'path': 'foo.bar'},
     ]
     self.Check(httplib.OK, expected_headers, expected_response)
-    self.assertEqual(self._tree.path, '')
+    self.assertEqual(self._tree.path, None)
 
   def testSetFile(self):
     class MutableTree(object):
