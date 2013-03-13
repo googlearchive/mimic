@@ -313,7 +313,8 @@ class ControlAppTest(unittest.TestCase):
 
     self.setUpApplication(MutableTree())
     self.RunWSGI('/_ah/mimic/file?path=foo.html', method='PUT', data='abc')
-    self.Check(httplib.OK)
+    self.Check(httplib.OK, output={'path': 'foo.html',
+                                   'mime_type': 'text/html; charset=utf-8'})
     self.assertEqual(self._tree.contents, 'abc')
     self.assertEqual(self._tree.path, 'foo.html')
 

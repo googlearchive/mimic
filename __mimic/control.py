@@ -150,6 +150,9 @@ class _FileHandler(_TreeHandler):
       self.error(httplib.BAD_REQUEST)
       return
     self._tree.SetFile(path, self.request.body)
+    file_data = {'path': path, 'mime_type': common.GuessMimeType(path)}
+    self.response.headers['Content-Type'] = 'application/json'
+    self.response.out.write(common.config.JSON_ENCODER.encode(file_data))
 
 
 class _MoveHandler(_TreeHandler):
