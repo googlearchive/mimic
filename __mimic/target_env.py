@@ -661,7 +661,7 @@ class TargetEnvironment(object):
 
     # Get and compile the source
     source = self._tree.GetFileContents(loader.file_path)
-    assert source is not None
+    assert source is not None, '{} has no source'.format(loader.file_path)
     if self._main_method:
       # TODO: Refactor this to use a proper getattr()
       # call, rather than appending to user source code.
@@ -867,41 +867,49 @@ class TargetEnvironment(object):
           file (either in the external or target file systems).
     """
     self._SetUp()
-    if handler.endswith('.py'):
-      # CGI handler (or WSGI done manually)
-      file_path = handler
-    elif '.' in handler:
-      # "native" WSGI handler
-      left, right = handler.rsplit('.', 1)
-      file_path = '%s.py' % left.replace('.', '/')
-      self._wsgi_app_name = right
-    else:
-      # Assume this is a package, like "foo/bar" or "foo/". Note that a package
-      # that is just "foo" doesn't work and is validated in target_info.
-      file_path = os.path.join(handler, '__init__.py')
-
-    self._cwd = os.path.dirname(file_path)  # see self._GetCwd()
-    sys.modules.pop('__main__', None)  # force a reload of __main__
-    # prevent mimic's main.py from masking the user's main.py in the case where
-    # the user's app.yaml script handler specifies a script which imports main
-    sys.modules.pop('main', None)
-    # force a reload of appengine_config.py, which gets automatically loaded
-    # before mimic's main code
-    sys.modules.pop('appengine_config', None)
-    logger = logging.getLogger()
-    if logging_handler:
-      logger.addHandler(logging_handler)
-    saved_level = logger.level
-    logger.setLevel(logging.DEBUG)
     try:
+      sys.modules.pop('__main__', None)  # force a reload of __main__
+      # prevent mimic's main.py from masking the user's main.py in the case
+      # where the user's app.yaml script handler specifies a script which
+      # imports main
+      sys.modules.pop('main', None)
+      # force a reload of appengine_config.py, which gets automatically loaded
+      # before mimic's main code
+      sys.modules.pop('appengine_config', None)
+      logger = logging.getLogger()
+      if logging_handler:
+        logger.addHandler(logging_handler)
+      saved_level = logger.level
+      logger.setLevel(logging.DEBUG)
+
       # This code relies on the fact that the os module has been patched at this
       # point and can be used to check for both external and target files.
+      if os.access('appengine_config.py', os.F_OK):
+        loader = _Loader(self, _TARGET_ROOT, 'appengine_config.py', False)
+        loader.load_module('appengine_config')
+
+      if handler.endswith('.py'):
+        # CGI handler (or WSGI done manually)
+        file_path = handler
+      elif '.' in handler:
+        # "native" WSGI handler
+        left, right = handler.rsplit('.', 1)
+        file_path = '%s.py' % left.replace('.', '/')
+        self._wsgi_app_name = right
+      else:
+        # Assume this is a package, like "foo/bar" or "foo/". Note that a
+        # package that is just "foo" doesn't work and is validated in
+        # target_info.
+        file_path = os.path.join(handler, '__init__.py')
+
+      self._cwd = os.path.dirname(file_path)  # see self._GetCwd()
       if not os.access(file_path, os.F_OK):
         raise ScriptNotFoundError()
       self._main_method = main_method
       # In case of an app.yaml script handler using a package script
       is_pkg = file_path.endswith('/__init__.py')
-      _Loader(self, _TARGET_ROOT, file_path, is_pkg).load_module('__main__')
+      loader = _Loader(self, _TARGET_ROOT, file_path, is_pkg)
+      loader.load_module('__main__')
     except ScriptNotFoundError:
       raise
     except:

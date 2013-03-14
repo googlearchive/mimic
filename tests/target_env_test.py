@@ -68,6 +68,19 @@ skip_files:
 - ^(.*/)?README\.txt
 """)
 
+_SIMPLE_APPENGINE_CONFIG = r"""
+import logging
+import sys
+_test_portal.appengine_config = sys.modules['appengine_config']
+logging.debug('running appengine_config.py')
+"""
+
+_SIMPLE_D_FOO = r"""
+import logging
+import sys
+_test_portal.main = sys.modules['__main__']
+logging.debug('running foo.py')
+"""
 
 class TestPortal(object):
   """A trivial class that lets target code exchange data with the test."""
@@ -355,12 +368,7 @@ raise ImportError
 
   def testRunScript(self):
     self._env._TearDown()  # RunScript will set up the env
-    self._tree.SetFile('d/foo.py', """
-import logging
-import sys
-_test_portal.main = sys.modules['__main__']
-logging.debug('running foo.py')
-""")
+    self._tree.SetFile('d/foo.py', _SIMPLE_D_FOO)
     level = logging.getLogger().level
     self.assertTrue(level > logging.DEBUG)  # should be true in a test
     handler = CollectingHandler()
@@ -398,6 +406,32 @@ logging.debug('running foo.py')
     # check that logging handler was invoked
     self.assertEquals(2, len(handler.records))
     self.assertEquals('running main.py', handler.records[0].getMessage())
+    self.assertEquals('running foo.py', handler.records[1].getMessage())
+    # check logging cleanup
+    self.assertEquals(level, logging.getLogger().level)
+
+  def testAppEngineConfig(self):
+    self._env._TearDown()  # RunScript will set up the env
+    self._tree.SetFile('appengine_config.py', _SIMPLE_APPENGINE_CONFIG)
+    self._tree.SetFile('d/foo.py', _SIMPLE_D_FOO)
+    level = logging.getLogger().level
+    self.assertTrue(level > logging.DEBUG)  # should be true in a test
+    handler = CollectingHandler()
+    self._env.RunScript('d/foo.py', handler)
+
+    module_main = _test_portal.main
+    self.assertEquals('__main__', module_main.__name__)
+    self.assertEquals('/target/d/foo.py', module_main.__file__)
+
+    module_appengine_config = _test_portal.appengine_config
+    self.assertEquals('appengine_config', module_appengine_config.__name__)
+    self.assertEquals('/target/appengine_config.py',
+                      module_appengine_config.__file__)
+
+    # check that logging handler was invoked
+    self.assertEquals(2, len(handler.records))
+    self.assertEquals('running appengine_config.py',
+                      handler.records[0].getMessage())
     self.assertEquals('running foo.py', handler.records[1].getMessage())
     # check logging cleanup
     self.assertEquals(level, logging.getLogger().level)
