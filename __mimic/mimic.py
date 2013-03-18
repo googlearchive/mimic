@@ -306,7 +306,8 @@ def GetProjectIdFromQueryParam():
   qs = os.environ.get('QUERY_STRING')
   if not qs:
     return None
-  params = dict(urlparse.parse_qsl(qs, strict_parsing=True))
+  # use strict_parsing=False to gracefully ignore bad query strings
+  params = dict(urlparse.parse_qsl(qs, strict_parsing=False))
   return params.get(common.config.PROJECT_ID_QUERY_PARAM)
 
 

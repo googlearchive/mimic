@@ -546,6 +546,8 @@ class MimicTest(unittest.TestCase):
                                        'foo=bar&_mimic_project=proj44')
     self.CheckProjectIdFromQueryString('proj45',
                                        'foo=bar&_mimic_project=proj45&a=b')
+    self.CheckProjectIdFromQueryString('proj46',
+                                       'foo=bar&_mimic_project=proj46&a=b&')
 
   def testGetProjectIdFromCurrentQueryParam(self):
     os.environ['SERVER_SOFTWARE'] = 'Production/check-project-id'
