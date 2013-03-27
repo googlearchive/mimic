@@ -695,6 +695,11 @@ class TargetEnvironment(object):
     if wsgi_app_name:
       if hasattr(module, wsgi_app_name):
         wsgi_app = getattr(module, wsgi_app_name)
+        appengine_config = sys.modules.get('appengine_config') or {}
+        webapp_add_wsgi_middleware = getattr(appengine_config,
+                                             'webapp_add_wsgi_middleware', None)
+        if webapp_add_wsgi_middleware:
+          wsgi_app = webapp_add_wsgi_middleware(wsgi_app)
         # let exceptions bubble up
         run_wsgi_app(wsgi_app)
       else:

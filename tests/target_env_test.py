@@ -17,6 +17,7 @@
 
 
 
+import cStringIO
 import encodings
 import errno
 import logging
@@ -75,11 +76,58 @@ _test_portal.appengine_config = sys.modules['appengine_config']
 logging.debug('running appengine_config.py')
 """
 
+_WSGI_MIDDLEWARE_APPENGINE_CONFIG = r"""
+import logging
+import sys
+
+from webob import Request
+
+_test_portal.appengine_config = sys.modules['appengine_config']
+logging.debug('running appengine_config.py with simple WSGI middleware')
+
+class SimpleMiddleware(object):
+
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        req = Request(environ)
+        resp = req.get_response(self.app)
+        resp.body = 'I WUZ HERE ' + resp.body
+        logging.debug('middleware modified body')
+        return resp(environ, start_response)
+
+def webapp_add_wsgi_middleware(app):
+  logging.debug('webapp_add_wsgi_middleware called')
+  _test_portal.original_app = app
+  return SimpleMiddleware(app)
+"""
+
 _SIMPLE_D_FOO = r"""
 import logging
 import sys
 _test_portal.main = sys.modules['__main__']
 logging.debug('running foo.py')
+"""
+
+_WSGI_MAIN = r"""
+import logging
+import webapp2
+import sys
+
+_test_portal.main = sys.modules['__main__']
+logging.debug('running main.py')
+
+class MainHandler(webapp2.RequestHandler):
+
+  def get(self):
+    logging.debug('handling GET request')
+    self.response.write('main-response-body')
+
+APP = webapp2.WSGIApplication([
+    ('/.*', MainHandler),
+], debug=True)
+_test_portal.APP = APP
 """
 
 class TestPortal(object):
@@ -116,9 +164,13 @@ class TargetEnvironmentTest(unittest.TestCase):
     # setup, so that we avoid recursion in tests trying to access the tree
     namespace_manager.get_namespace()
     self._env._SetUp()
+    self._output = cStringIO.StringIO()
+    self._saved_out = sys.stdout
+    sys.stdout = self._output
 
   def tearDown(self):
     self._env._TearDown()
+    sys.stdout = self._saved_out
 
   def testInstance(self):
     self.assertTrue(self._env is target_env.TargetEnvironment.Instance())
@@ -428,13 +480,76 @@ logging.debug('running foo.py')
     self.assertEquals('/target/appengine_config.py',
                       module_appengine_config.__file__)
 
+  def testWsgiApp(self):
+    self._env._TearDown()  # RunScript will set up the env
+    self._tree.SetFile('main.py', _WSGI_MAIN)
+    level = logging.getLogger().level
+    self.assertTrue(level > logging.DEBUG)  # should be true in a test
+    handler = CollectingHandler()
+
+    os.environ['REQUEST_METHOD'] = 'GET'
+    os.environ['PATH_INFO'] = '/main.APP'
+    self._env.RunScript('main.APP', handler)
+
+    module_main = _test_portal.main
+    self.assertEquals('__main__', module_main.__name__)
+    self.assertIsNotNone(module_main.APP)
+    self.assertEquals('/target/main.py', module_main.__file__)
+
+    self.assertEquals(module_main.APP, _test_portal.APP)
+
     # check that logging handler was invoked
     self.assertEquals(2, len(handler.records))
-    self.assertEquals('running appengine_config.py',
-                      handler.records[0].getMessage())
-    self.assertEquals('running foo.py', handler.records[1].getMessage())
+    self.assertEquals('running main.py', handler.records[0].getMessage())
+    self.assertEquals('handling GET request', handler.records[1].getMessage())
     # check logging cleanup
     self.assertEquals(level, logging.getLogger().level)
+
+    self.assertEquals('Status: 200 OK\n'
+                      'Content-Type: text/html; charset=utf-8\n'
+                      'Cache-Control: no-cache\n'
+                      'Content-Length: 18\n\n'
+                      'main-response-body', self._output.getvalue())
+
+  def testWsgiMiddleware(self):
+    self._env._TearDown()  # RunScript will set up the env
+    self._tree.SetFile('appengine_config.py', _WSGI_MIDDLEWARE_APPENGINE_CONFIG)
+    self._tree.SetFile('main.py', _WSGI_MAIN)
+    level = logging.getLogger().level
+    self.assertTrue(level > logging.DEBUG)  # should be true in a test
+    handler = CollectingHandler()
+    self._env.RunScript('main.APP', handler)
+
+    module_main = _test_portal.main
+    self.assertEquals('__main__', module_main.__name__)
+    self.assertIsNotNone(module_main.APP)
+    self.assertEquals('/target/main.py', module_main.__file__)
+
+    module_appengine_config = _test_portal.appengine_config
+    self.assertEquals('appengine_config', module_appengine_config.__name__)
+    self.assertIsNotNone(module_appengine_config.webapp_add_wsgi_middleware)
+    self.assertEquals(module_main.APP, _test_portal.original_app)
+    self.assertEquals('/target/appengine_config.py',
+                      module_appengine_config.__file__)
+
+    # check that logging handler was invoked
+    self.assertEquals(5, len(handler.records))
+    self.assertEquals('running appengine_config.py with simple WSGI middleware',
+                      handler.records[0].getMessage())
+    self.assertEquals('running main.py', handler.records[1].getMessage())
+    self.assertEquals('webapp_add_wsgi_middleware called',
+                      handler.records[2].getMessage())
+    self.assertEquals('handling GET request', handler.records[3].getMessage())
+    self.assertEquals('middleware modified body',
+                      handler.records[4].getMessage())
+    # check logging cleanup
+    self.assertEquals(level, logging.getLogger().level)
+
+    self.assertEquals('Status: 200 OK\n'
+                      'Content-Type: text/html; charset=utf-8\n'
+                      'Cache-Control: no-cache\n'
+                      'Content-Length: 29\n\n'
+                      'I WUZ HERE main-response-body', self._output.getvalue())
 
   def testRunScriptRestoresMimicModulesMaskedByUserCode(self):
     # an already loaded module which we can mask in this test
