@@ -61,8 +61,8 @@ _SUPPORTED_INBOUND_SERVICES = set(['channel_presence', 'mail', 'xmpp_message',
 # regardless of the target's app.yaml file.  However it is important to allow
 # them in the app.yaml file in the event that the developer wants to enable
 # the builtin in production.
-_SUPPORTED_BUILTINS = set(['appstats', 'datastore_admin', 'deferred',
-                           'remote_api'])
+_SUPPORTED_BUILTINS = set(['admin_redirect', 'appstats', 'datastore_admin',
+                           'deferred', 'remote_api'])
 
 # These libraries are included in mimic's app.yaml and are always available,
 # regardless of the target's app.yaml file.  However it is important to allow

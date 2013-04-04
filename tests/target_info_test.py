@@ -218,6 +218,13 @@ builtins:
 """)
     target_info._ValidateConfig(config)
 
+  def testBuiltinAdminRedirect(self):
+    config = yaml.load(APP_YAML + """
+builtins:
+- admin_redirect: on
+""")
+    target_info._ValidateConfig(config)
+
   def testBuiltinDatastoreAdmin(self):
     config = yaml.load(APP_YAML + """
 builtins:
