@@ -366,6 +366,36 @@ builtins:
       # shouldn't pass
       self.CheckError(config)
 
+  def testLibraries(self):
+    config = yaml.load(APP_YAML + """
+libraries:
+- name: webapp2
+  version: to_be_set
+""")
+    valid_versions = ('latest', '2.5.2')
+    for version in valid_versions:
+      config['libraries'][0]['version'] = version
+      target_info._ValidateConfig(config)
+
+  def testLibrariesInvalidVersion(self):
+    config = yaml.load(APP_YAML + """
+libraries:
+- name: webapp2
+  version: latest
+""")
+    invalid_versions = ('foo', '0.6.3')
+    for version in invalid_versions:
+      config['libraries'][0]['version'] = version
+      self.CheckError(config)
+
+  def testLibrariesInvalidLibraryName(self):
+    config = yaml.load(APP_YAML + """
+libraries:
+- name: foo
+  version: latest
+""")
+    self.CheckError(config)
+
   def testSkipFiles(self):
     config = yaml.load(APP_YAML + """
 skip_files:

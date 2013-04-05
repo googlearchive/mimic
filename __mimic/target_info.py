@@ -19,6 +19,7 @@
 
 
 import re
+import sys
 
 # TODO: Lots of app.yaml functionality is still missing.
 
@@ -71,6 +72,19 @@ _SUPPORTED_BUILTINS = set(['admin_redirect', 'appstats', 'datastore_admin',
 _SUPPORTED_LIBRARIES = set(['django', 'jinja2', 'lxml', 'markupsafe', 'numpy',
                             'PIL', 'pycrypto', 'setuptools', 'webapp2', 'webob',
                             'yaml'])
+
+# Regular expression which determines 3rd party library versions via sys.path
+# We use this approach since not all libraries support __version__ or VERSION
+_SUPPORTED_LIBRARY_PATH_RE = re.compile(r'.*/(\w+)-([\d\.]+)$')
+
+# List of regex matchers for sys.path entries
+_SUPPORTED_LIBRARY_SYS_PATH_MATCHERS = [_SUPPORTED_LIBRARY_PATH_RE.match(p)
+                                        for p in sys.path]
+
+# Dictionary mapping supported library names to the current available version
+_SUPPORTED_LIBRARY_VERSIONS = dict([
+    m.groups() for m in _SUPPORTED_LIBRARY_SYS_PATH_MATCHERS if m
+])
 
 # Regular expression for matching cache expiration deltas.
 # Lifted from google/appengine/api/appinfo.py
@@ -375,11 +389,12 @@ def _ValidateLibrary(library):
   if name not in _SUPPORTED_LIBRARIES:
     raise ValidationError('app.yaml library {0!r} is not among supported '
                           'libraries {1!r}'.format(name, _SUPPORTED_LIBRARIES))
-  version = library.get('version')
-  # Keep in sync with our app.yaml which specifies 'latests' for all libraries.
-  if version != 'latest':
-    raise ValidationError('app.yaml library version must be {0!r}'
-                          .format('latest'))
+  version = str(library.get('version'))
+  available_version = str(_SUPPORTED_LIBRARY_VERSIONS[name])
+  allowed_versions = ('latest', available_version)
+  if version not in allowed_versions:
+    raise ValidationError('app.yaml {!r} library version {!r} not one of {!r}'
+                          .format(name, version, allowed_versions))
 
 
 def _ValidateConfig(config):
