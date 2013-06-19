@@ -206,7 +206,8 @@ class _LogRequestHandler(webapp.RequestHandler):
   def get(self):  # pylint: disable-msg=C6409, C6111
     parent = os.path.dirname(__file__)
     path = os.path.join(parent, 'templates', 'log.html')
-    data = open(path).read()
+    with open(path) as f:
+      data = f.read()
     token = self._create_channel_fn(_LOGGING_CLIENT_ID)
     values = {
         'token': token,
