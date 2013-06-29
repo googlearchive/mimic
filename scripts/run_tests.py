@@ -60,7 +60,9 @@ def main():
     file_pattern = '*_test.py'
 
   # setup a minimal / partial CGI environment
+  os.environ['HTTP_HOST'] = 'localhost:8080'
   os.environ['SERVER_NAME'] = 'localhost'
+  os.environ['SERVER_PORT'] = '8080'
   os.environ['SERVER_SOFTWARE'] = 'Development/unittests'
   os.environ['PATH_INFO'] = '/moonbase'
 

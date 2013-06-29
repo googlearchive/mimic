@@ -196,7 +196,7 @@ class MimicTest(unittest.TestCase):
     # used by app_identity.get_default_version_hostname()
     os.environ['DEFAULT_VERSION_HOSTNAME'] = 'your-app-id.appspot.com'
     # we set it here to prevent contaimination, may be overridden in tests
-    os.environ['SERVER_NAME'] = 'your-app-id.appspot.com'
+    os.environ['HTTP_HOST'] = 'your-app-id.appspot.com'
     # TODO: add tests for app.yaml 'secure: always'
     os.environ['wsgi.url_scheme'] = 'http'
     os.environ['PATH_INFO'] = ''
@@ -485,47 +485,52 @@ class MimicTest(unittest.TestCase):
     self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('hello\n', self._body)
 
-  def CheckHostParseFailure(self, server_name):
-    os.environ['SERVER_NAME'] = server_name
-    project_id = mimic.GetProjectIdFromServerName()
+  def CheckHostParseFailure(self, http_host):
+    os.environ['HTTP_HOST'] = http_host
+    project_id = mimic.GetProjectIdFromHttpHost()
     self.assertEquals(None, project_id)
 
-  def testGetProjectIdFromServerNameAppspot(self):
-    os.environ['SERVER_NAME'] = 'project-id.your-app-id.appspot.com'
-    project_id = mimic.GetProjectIdFromServerName()
+  def testGetProjectIdFromHttpHostAppspot(self):
+    os.environ['HTTP_HOST'] = 'project-id.your-app-id.appspot.com'
+    project_id = mimic.GetProjectIdFromHttpHost()
     self.assertEquals('project-id', project_id)
 
     # Must have project id subdomain
     self.CheckHostParseFailure('your-app-id.appspot.com')
 
-  def testGetProjectIdFromServerNameAppspotDashDotDash(self):
-    os.environ['SERVER_NAME'] = 'project-id-dot-your-app-id.appspot.com'
-    project_id = mimic.GetProjectIdFromServerName()
+  def testGetProjectIdFromHttpHostAppspotWithPort(self):
+    os.environ['HTTP_HOST'] = 'project-id.your-app-id.appspot.com:12345'
+    project_id = mimic.GetProjectIdFromHttpHost()
     self.assertEquals('project-id', project_id)
 
-  def testGetProjectIdFromServerNameCustomDomain(self):
-    os.environ['SERVER_NAME'] = 'www.mydomain.com'
-    project_id = mimic.GetProjectIdFromServerName()
+  def testGetProjectIdFromHttpHostAppspotDashDotDash(self):
+    os.environ['HTTP_HOST'] = 'project-id-dot-your-app-id.appspot.com'
+    project_id = mimic.GetProjectIdFromHttpHost()
+    self.assertEquals('project-id', project_id)
+
+  def testGetProjectIdFromHttpHostCustomDomain(self):
+    os.environ['HTTP_HOST'] = 'www.mydomain.com'
+    project_id = mimic.GetProjectIdFromHttpHost()
     self.assertEquals('www', project_id)
 
-    os.environ['SERVER_NAME'] = 'proj1.www.mydomain.com'
-    project_id = mimic.GetProjectIdFromServerName()
+    os.environ['HTTP_HOST'] = 'proj1.www.mydomain.com'
+    project_id = mimic.GetProjectIdFromHttpHost()
     self.assertEquals('proj1', project_id)
 
-  def testGetProjectIdFromServerNameLocalhost(self):
+  def testGetProjectIdFromHttpHostLocalhost(self):
     os.environ['HTTP_HOST'] = 'localhost:8080'
     os.environ['SERVER_NAME'] = 'localhost'
-    project_id = mimic.GetProjectIdFromServerName()
+    project_id = mimic.GetProjectIdFromHttpHost()
     self.assertEquals(None, project_id)
 
-  def testGetProjectIdFromServerNameCustomDomainDashDotDash(self):
-    os.environ['SERVER_NAME'] = 'proj2-dot-www.mydomain.com'
-    project_id = mimic.GetProjectIdFromServerName()
+  def testGetProjectIdFromHttpHostCustomDomainDashDotDash(self):
+    os.environ['HTTP_HOST'] = 'proj2-dot-www.mydomain.com'
+    project_id = mimic.GetProjectIdFromHttpHost()
     self.assertEquals('proj2', project_id)
 
-  def testGetProjectIdFromServerNameIpv4(self):
-    os.environ['SERVER_NAME'] = '0.0.0.0'
-    project_id = mimic.GetProjectIdFromServerName()
+  def testGetProjectIdFromHttpHostIpv4(self):
+    os.environ['HTTP_HOST'] = '0.0.0.0'
+    project_id = mimic.GetProjectIdFromHttpHost()
     self.assertEquals(None, project_id)
 
   def CheckProjectIdFromQueryString(self, expected_value, query_string):
@@ -586,7 +591,7 @@ class MimicTest(unittest.TestCase):
                       mimic.GetProjectIdFromPathInfo('/_mimic/p/foo/bar/'))
 
   def CheckProjectId(self, expected_value, header_value, query_value,
-                     path_info_value, server_name_value, recent_query_value,
+                     path_info_value, http_host_value, recent_query_value,
                      is_dev_mode):
     if header_value:
       os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = header_value
@@ -598,11 +603,11 @@ class MimicTest(unittest.TestCase):
     else:
       os.environ['PATH_INFO'] = '/foo'
 
-    if server_name_value:
-      os.environ['SERVER_NAME'] = ('{0}-dot-your-app-id.appspot.com'
-                                   .format(server_name_value))
+    if http_host_value:
+      os.environ['HTTP_HOST'] = ('{0}-dot-your-app-id.appspot.com'
+                                   .format(http_host_value))
     else:
-      os.environ['SERVER_NAME'] = 'your-app-id.appspot.com'
+      os.environ['HTTP_HOST'] = 'your-app-id.appspot.com'
 
     if query_value:
       os.environ['QUERY_STRING'] = '_mimic_project={0}'.format(query_value)

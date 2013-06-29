@@ -69,11 +69,6 @@ def InitAppHostingApi():
   # used by app_identity.get_default_version_hostname()
   os.environ['DEFAULT_VERSION_HOSTNAME'] = 'localhost:8080'
 
-  # remove any environment keys representing HTTP request headers
-  keys = [k for k in os.environ.keys() if k.startswith('HTTP_')]
-  for k in keys:
-    del os.environ[k]
-
   appid = os.environ['APPLICATION_ID'] = 'app'
   apiproxy_stub_map.apiproxy = apiproxy_stub_map.APIProxyStubMap()
   # Need an HRD stub to support XG transactions

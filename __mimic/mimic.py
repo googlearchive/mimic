@@ -253,28 +253,30 @@ def RunTargetApp(tree, path_info, namespace, users_mod):
     raise NotImplementedError('Unrecognized page {0!r}'.format(page))
 
 
-def GetProjectIdFromServerName():
-  """Returns the project id from the SERVER_NAME env var.
+def GetProjectIdFromHttpHost():
+  """Returns the project id from the HTTP_HOST env var.
 
   For appspot.com domains, a project id is extracted from the left most
   portion of the subdomain. If no subdomain is specified, or if the project
-  id cannot be determined, None is returned. Finally, when the server name
+  id cannot be determined, None is returned. Finally, when the HTTP host
   is 'localhost' or an IPv4 address, None is also returned.
 
   For custom domains, it's not possible to determine with certainty the
   subdomain vs. the default version hostname. In this case we end up using
-  the left most component of the server name.
+  the left most component of the HTTP host.
 
-  Example mapping of server name to project id:
+  Example mapping of HTTP host to project id:
 
-  Server Name                              Project Id
-  -----------                              ------------
+  HTTP Host                                Project Id
+  ---------                                ------------
   proj1.your-app-id.appspot.com        ->  'proj1'
+  proj1.your-app-id.appspot.com:12345  ->  'proj1'
   proj1-dot-your-app-id.appspot.com    ->  'proj1'
   your-app-id.appspot.com              ->  None
   www.mydomain.com                     ->  'www'
   proj2.www.mydomain.com               ->  'proj2'
   localhost                            ->  None
+  localhost:8080                       ->  None
   192.168.0.1                          ->  None
 
   Returns:
@@ -284,16 +286,18 @@ def GetProjectIdFromServerName():
   # 'project-id-dot-your-app-id.appspot.com' or
   # 'project-id.your-app-id.appspot.com'
 
-  server_name = os.environ['SERVER_NAME']
+  http_host = os.environ['HTTP_HOST']
   # use a consistent delimiter
-  server_name = server_name.replace('-dot-', '.')
+  http_host = http_host.replace('-dot-', '.')
+  # remove port number
+  http_host = http_host.split(':')[0]
 
-  if (server_name == 'localhost' or
-      common.IPV4_REGEX.match(server_name) or
-      server_name == app_identity.get_default_version_hostname()):
+  if (http_host == 'localhost' or
+      common.IPV4_REGEX.match(http_host) or
+      http_host == app_identity.get_default_version_hostname()):
     return None
 
-  return server_name.split('.')[0]
+  return http_host.split('.')[0]
 
 
 def GetProjectIdFromQueryParam():
@@ -342,7 +346,7 @@ def GetProjectId():
   project_id = GetProjectIdFromPathInfo(os.environ['PATH_INFO'])
   if project_id:
     return project_id
-  project_id = GetProjectIdFromServerName()
+  project_id = GetProjectIdFromHttpHost()
   if project_id:
     return project_id
   if common.IsDevMode():
