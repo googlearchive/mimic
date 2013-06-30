@@ -80,10 +80,10 @@ class Mimic(object):
     parser.feed(response)
     parsed_response = parser.close()
     if 'Status' in parsed_response:
-      status = parsed_response['Status'].split(' ', 1)[0]
+      status = parsed_response['Status']
       del parsed_response['Status']
     else:
-      status = '200'
+      status = '200 OK'
     response_headers = parsed_response.items()
     self.start_response(status, response_headers)
     return parsed_response.get_payload()

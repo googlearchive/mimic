@@ -38,7 +38,7 @@ import unittest
 
 # https://developers.google.com/appengine/docs/python/gettingstarted/helloworld
 _SIMPLE_CGI_SCRIPT = """
-print 'Status: 200'
+print 'Status: 200 OK'
 print 'Content-Type: text/plain; charset=utf-8'
 print
 print 'hello'
@@ -263,15 +263,16 @@ class MimicTest(unittest.TestCase):
     parser.feed(response)
     parsed_response = parser.close()
     if 'Status' in parsed_response:
-      self._status = int(parsed_response['Status'].split(' ', 1)[0])
+      self._status = parsed_response['Status']
       del parsed_response['Status']
     else:
-      self._status = 200
+      self._status = '200 OK'
     self._headers = dict(parsed_response.items())
     self._body = parsed_response.get_payload()
 
   def _CheckResponse(self, status, content_type):
-    self.assertEquals(status, self._status)
+    expected_status = '{} {}'.format(status, httplib.responses[status])
+    self.assertEquals(expected_status, self._status)
     self.assertEquals(content_type, self._headers.get('Content-Type'))
 
   def assertResponseExpiration(self, seconds):
@@ -281,13 +282,13 @@ class MimicTest(unittest.TestCase):
 
   def testNoAppYaml(self):
     self._CallMimic('/')
-    self.assertEquals(httplib.NOT_FOUND, self._status)
+    self._CheckResponse(httplib.NOT_FOUND, 'text/plain; charset=utf-8')
     self.assertTrue('no app.yaml file' in self._body)
 
   def testEmptyAppYaml(self):
     self._AddFile('app.yaml', '')
     self._CallMimic('/')
-    self.assertEquals(httplib.NOT_FOUND, self._status)
+    self._CheckResponse(httplib.NOT_FOUND, 'text/plain; charset=utf-8')
     self.assertTrue('app.yaml configuration is missing or invalid'
                     in self._body)
 
@@ -322,7 +323,7 @@ class MimicTest(unittest.TestCase):
   def testStaticPageNotFound(self):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._CallMimic('/bar.html')
-    self.assertEquals(httplib.NOT_FOUND, self._status)
+    self._CheckResponse(httplib.NOT_FOUND, 'text/html; charset=utf-8')
 
   def testStaticPageGuessedType(self):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
@@ -434,7 +435,7 @@ class MimicTest(unittest.TestCase):
   def testCgiPageNotFound(self):
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
     self._CallMimic('/main.py')
-    self.assertEquals(httplib.NOT_FOUND, self._status)
+    self._CheckResponse(httplib.NOT_FOUND, 'text/plain; charset=utf-8')
 
   def testScritPageLoginRequired(self):
     self._users_mod.set_current_user(FakeUser('Bob'))
@@ -645,7 +646,7 @@ class MimicTest(unittest.TestCase):
   def testVersionIdWithoutProjectId(self):
     self._CallMimic('/_ah/mimic/version_id',
                     http_host='your-app-id.appspot.com')
-    self.assertEquals(httplib.OK, self._status)
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     # should be a response containing a mimic identifier and some version info
     self.assertTrue(str(common.VERSION_ID) in self._body)
 
@@ -654,7 +655,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
     # tree should still work even though we've not specified a project id
     self._CallMimic('/main.py', http_host='your-app-id.appspot.com')
-    self.assertEquals(httplib.OK, self._status)
+    self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('hello\n', self._body)
 
   def SetupDBNamespacing(self):
@@ -678,7 +679,7 @@ p.put()
 person.Person.get_by_key_name('person')
 
 print 'Content-type: text/plain; charset=utf-8'
-print 'Status: 200'
+print 'Status: 200 OK'
 print ''
 print 'name: ' + name
 """
@@ -687,7 +688,7 @@ print 'name: ' + name
 import person
 
 print 'Content-type: text/plain; charset=utf-8'
-print 'Status: 200'
+print 'Status: 200 OK'
 print ''
 p = person.Person.get_by_key_name('person')
 if p:
@@ -701,7 +702,7 @@ from google.appengine.ext import db
 import person
 
 print 'Content-type: text/plain; charset=utf-8'
-print 'Status: 200'
+print 'Status: 200 OK'
 print ''
 query = db.Query(person.Person)
 people = query.fetch(limit=100)
@@ -713,7 +714,7 @@ for p in people:
 from google.appengine.ext import db
 
 print 'Content-type: text/plain; charset=utf-8'
-print 'Status: 200'
+print 'Status: 200 OK'
 print ''
 query = db.GqlQuery('SELECT * FROM Person')
 people = query.fetch(100)
@@ -788,7 +789,7 @@ value = os.environ['PATH_INFO'].split('?')[1]
 memcache.add(key="my_key", value=value, time=3600)
 
 print 'Content-type: text/plain; charset=utf-8'
-print 'Status: 200'
+print 'Status: 200 OK'
 print ''
 print 'value: ' + value
 """
@@ -799,7 +800,7 @@ from google.appengine.api import memcache
 value = memcache.get(key="my_key")
 
 print 'Content-type: text/plain; charset=utf-8'
-print 'Status: 200'
+print 'Status: 200 OK'
 print ''
 print 'value: ' + value
 """
@@ -824,7 +825,7 @@ print 'value: ' + value
     """Tests that parsing a bad app yaml raises the appropriate error."""
     self._AddFile('app.yaml', '"')
     self._CallMimic('/')
-    self.assertEquals(httplib.NOT_FOUND, self._status)
+    self._CheckResponse(httplib.NOT_FOUND, 'text/plain; charset=utf-8')
     self.assertTrue('app.yaml configuration is missing or invalid'
                     in self._body)
 

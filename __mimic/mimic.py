@@ -96,7 +96,7 @@ def RespondWithStatus(status_code, expiration_s=0,
                       data=None, headers=None):
   """Respond with a status code and optional text/plain; charset=utf-8 data."""
   print 'Content-Type: %s' % content_type
-  print 'Status: %d' % status_code
+  print 'Status: %d %s' % (status_code, httplib.responses[status_code])
   if expiration_s:
     print 'Expires: %s' % rfc822.formatdate(time.time() + expiration_s)
     print 'Cache-Control: public, max-age=%s' % expiration_s
