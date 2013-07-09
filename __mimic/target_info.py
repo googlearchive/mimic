@@ -91,9 +91,9 @@ _SUPPORTED_LIBRARY_VERSIONS = dict([
 _DELTA_REGEX = r'([0-9]+)([DdHhMm]|[sS]?)'
 _EXPIRATION_REGEX = r'^\s*(%s)(\s+%s)*\s*$' % (_DELTA_REGEX, _DELTA_REGEX)
 
-# Match default expiration time for static resources as documented in:
-# https://developers.google.com/appengine/docs/python/config/appconfig
-_DEFAULT_STATIC_FILE_EXPIRATION = '10m'
+# Match devappserver behavior of no caching, rather than production default
+# https://developers.google.com/appengine/docs/python/config/appconfig#Static_Cache_Expiration
+_DEFAULT_STATIC_FILE_EXPIRATION = '0s'
 
 
 class ValidationError(Exception):
