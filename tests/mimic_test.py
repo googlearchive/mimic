@@ -605,7 +605,7 @@ class MimicTest(unittest.TestCase):
 
     if http_host_value:
       os.environ['HTTP_HOST'] = ('{0}-dot-your-app-id.appspot.com'
-                                   .format(http_host_value))
+                                 .format(http_host_value))
     else:
       os.environ['HTTP_HOST'] = 'your-app-id.appspot.com'
 
