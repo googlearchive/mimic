@@ -253,8 +253,8 @@ def RunTargetApp(tree, path_info, namespace, users_mod):
     raise NotImplementedError('Unrecognized page {0!r}'.format(page))
 
 
-def GetProjectIdFromHttpHost():
-  """Returns the project id from the HTTP_HOST env var.
+def GetProjectIdFromHttpHost(environ):
+  """Returns the project id from the HTTP_HOST environ var.
 
   For appspot.com domains, a project id is extracted from the left most
   portion of the subdomain. If no subdomain is specified, or if the project
@@ -286,7 +286,7 @@ def GetProjectIdFromHttpHost():
   # 'project-id-dot-your-app-id.appspot.com' or
   # 'project-id.your-app-id.appspot.com'
 
-  http_host = os.environ['HTTP_HOST']
+  http_host = environ['HTTP_HOST']
   # use a consistent delimiter
   http_host = http_host.replace('-dot-', '.')
   # remove port number
@@ -300,14 +300,14 @@ def GetProjectIdFromHttpHost():
   return http_host.split('.')[0]
 
 
-def GetProjectIdFromQueryParam():
+def GetProjectIdFromQueryParam(environ):
   """Returns the project id from the query string.
 
   Returns:
     The project id or None.
   """
 
-  qs = os.environ.get('QUERY_STRING')
+  qs = environ.get('QUERY_STRING')
   if not qs:
     return None
   # use strict_parsing=False to gracefully ignore bad query strings
@@ -315,15 +315,16 @@ def GetProjectIdFromQueryParam():
   return params.get(common.config.PROJECT_ID_QUERY_PARAM)
 
 
-def GetProjectIdFromPathInfo(path_info):
+def GetProjectIdFromPathInfo(environ):
   """Returns the project id from the request path."""
+  path_info = environ['PATH_INFO']
   m = common.config.PROJECT_ID_FROM_PATH_INFO_RE.match(path_info)
   if not m:
     return None
   return m.group(1)
 
 
-def GetProjectId():
+def GetProjectId(environ):
   """Returns the project id from the HTTP request.
 
   A number of sources for project id are tried in order. See implementation
@@ -335,18 +336,18 @@ def GetProjectId():
     The project id or None.
   """
   # for task queues, use persisted namespace as the project id
-  project_id = os.environ.get(_HTTP_X_APPENGINE_CURRENT_NAMESPACE)
+  project_id = environ.get(_HTTP_X_APPENGINE_CURRENT_NAMESPACE)
   if project_id:
     return project_id
-  project_id = GetProjectIdFromQueryParam()
+  project_id = GetProjectIdFromQueryParam(environ)
   if project_id:
     if common.IsDevMode():
       _dev_appserver_state['project_id'] = project_id
     return project_id
-  project_id = GetProjectIdFromPathInfo(os.environ['PATH_INFO'])
+  project_id = GetProjectIdFromPathInfo(environ)
   if project_id:
     return project_id
-  project_id = GetProjectIdFromHttpHost()
+  project_id = GetProjectIdFromHttpHost(environ)
   if project_id:
     return project_id
   if common.IsDevMode():
@@ -355,7 +356,7 @@ def GetProjectId():
 
 
 def GetNamespace():
-  namespace = GetProjectId() or ''
+  namespace = GetProjectId(os.environ) or ''
   # throws BadValueError
   namespace_manager.validate_namespace(namespace)
   return namespace

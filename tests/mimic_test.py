@@ -488,12 +488,12 @@ class MimicTest(unittest.TestCase):
 
   def CheckHostParseFailure(self, http_host):
     os.environ['HTTP_HOST'] = http_host
-    project_id = mimic.GetProjectIdFromHttpHost()
+    project_id = mimic.GetProjectIdFromHttpHost(os.environ)
     self.assertEquals(None, project_id)
 
   def testGetProjectIdFromHttpHostAppspot(self):
     os.environ['HTTP_HOST'] = 'project-id.your-app-id.appspot.com'
-    project_id = mimic.GetProjectIdFromHttpHost()
+    project_id = mimic.GetProjectIdFromHttpHost(os.environ)
     self.assertEquals('project-id', project_id)
 
     # Must have project id subdomain
@@ -501,48 +501,48 @@ class MimicTest(unittest.TestCase):
 
   def testGetProjectIdFromHttpHostAppspotWithPort(self):
     os.environ['HTTP_HOST'] = 'project-id.your-app-id.appspot.com:12345'
-    project_id = mimic.GetProjectIdFromHttpHost()
+    project_id = mimic.GetProjectIdFromHttpHost(os.environ)
     self.assertEquals('project-id', project_id)
 
   def testGetProjectIdFromHttpHostAppspotDashDotDash(self):
     os.environ['HTTP_HOST'] = 'project-id-dot-your-app-id.appspot.com'
-    project_id = mimic.GetProjectIdFromHttpHost()
+    project_id = mimic.GetProjectIdFromHttpHost(os.environ)
     self.assertEquals('project-id', project_id)
 
   def testGetProjectIdFromHttpHostCustomDomain(self):
     os.environ['HTTP_HOST'] = 'www.mydomain.com'
-    project_id = mimic.GetProjectIdFromHttpHost()
+    project_id = mimic.GetProjectIdFromHttpHost(os.environ)
     self.assertEquals('www', project_id)
 
     os.environ['HTTP_HOST'] = 'proj1.www.mydomain.com'
-    project_id = mimic.GetProjectIdFromHttpHost()
+    project_id = mimic.GetProjectIdFromHttpHost(os.environ)
     self.assertEquals('proj1', project_id)
 
   def testGetProjectIdFromHttpHostLocalhost(self):
     os.environ['HTTP_HOST'] = 'localhost:8080'
     os.environ['SERVER_NAME'] = 'localhost'
-    project_id = mimic.GetProjectIdFromHttpHost()
+    project_id = mimic.GetProjectIdFromHttpHost(os.environ)
     self.assertEquals(None, project_id)
 
   def testGetProjectIdFromHttpHostCustomDomainDashDotDash(self):
     os.environ['HTTP_HOST'] = 'proj2-dot-www.mydomain.com'
-    project_id = mimic.GetProjectIdFromHttpHost()
+    project_id = mimic.GetProjectIdFromHttpHost(os.environ)
     self.assertEquals('proj2', project_id)
 
   def testGetProjectIdFromHttpHostIpv4(self):
     os.environ['HTTP_HOST'] = '0.0.0.0'
-    project_id = mimic.GetProjectIdFromHttpHost()
+    project_id = mimic.GetProjectIdFromHttpHost(os.environ)
     self.assertEquals(None, project_id)
 
   def CheckProjectIdFromQueryString(self, expected_value, query_string):
     os.environ['QUERY_STRING'] = query_string
     # we call GetProjectId rather than GetProjectIdFromQueryParam
     # so that mimic._dev_appserver_state is acccessed
-    self.assertEquals(expected_value, mimic.GetProjectId())
+    self.assertEquals(expected_value, mimic.GetProjectId(os.environ))
 
   def testGetProjectIdFromQueryParam(self):
     self.assertEquals('_mimic_project', common.config.PROJECT_ID_QUERY_PARAM)
-    self.assertEquals(None, mimic.GetProjectIdFromQueryParam())
+    self.assertEquals(None, mimic.GetProjectIdFromQueryParam(os.environ))
     self.CheckProjectIdFromQueryString(None, '')
     self.CheckProjectIdFromQueryString(None, 'foo=')
     self.CheckProjectIdFromQueryString(None, 'foo=bar')
@@ -560,7 +560,7 @@ class MimicTest(unittest.TestCase):
     os.environ['SERVER_SOFTWARE'] = 'Production/check-project-id'
     self.assertEquals(None, mimic._dev_appserver_state.get('project_id'))
     self.assertEquals('_mimic_project', common.config.PROJECT_ID_QUERY_PARAM)
-    self.assertEquals(None, mimic.GetProjectIdFromQueryParam())
+    self.assertEquals(None, mimic.GetProjectIdFromQueryParam(os.environ))
     self.CheckProjectIdFromQueryString('proj42', '_mimic_project=proj42')
     self.assertEquals(None, mimic._dev_appserver_state.get('project_id'))
     self.CheckProjectIdFromQueryString(None, '')
@@ -572,7 +572,7 @@ class MimicTest(unittest.TestCase):
     os.environ['SERVER_SOFTWARE'] = 'Development/check-project-id'
     self.assertEquals(None, mimic._dev_appserver_state.get('project_id'))
     self.assertEquals('_mimic_project', common.config.PROJECT_ID_QUERY_PARAM)
-    self.assertEquals(None, mimic.GetProjectIdFromQueryParam())
+    self.assertEquals(None, mimic.GetProjectIdFromQueryParam(os.environ))
     self.CheckProjectIdFromQueryString('proj42', '_mimic_project=proj42')
     self.assertEquals('proj42', mimic._dev_appserver_state.get('project_id'))
     self.CheckProjectIdFromQueryString('proj42', '')
@@ -581,48 +581,53 @@ class MimicTest(unittest.TestCase):
     self.assertEquals('proj42', mimic._dev_appserver_state.get('project_id'))
 
   def testGetProjectIdFromPathInfo(self):
+
+    def _GetProjectIdFromPathInfo(path_info):
+      environ = {'PATH_INFO': path_info}
+      return mimic.GetProjectIdFromPathInfo(environ)
+
     self.assertEquals('/_mimic/p/(.+?)/',
                       common.config.PROJECT_ID_FROM_PATH_INFO_RE.pattern)
-    self.assertEquals(None, mimic.GetProjectIdFromPathInfo('/'))
-    self.assertEquals('foo', mimic.GetProjectIdFromPathInfo('/_mimic/p/foo/'))
-    self.assertEquals(None, mimic.GetProjectIdFromPathInfo('/_mimic/p/foo'))
-    self.assertEquals('foo',
-                      mimic.GetProjectIdFromPathInfo('/_mimic/p/foo/bar'))
-    self.assertEquals('foo',
-                      mimic.GetProjectIdFromPathInfo('/_mimic/p/foo/bar/'))
+    self.assertEquals(None, _GetProjectIdFromPathInfo('/'))
+    self.assertEquals('foo', _GetProjectIdFromPathInfo('/_mimic/p/foo/'))
+    self.assertEquals(None, _GetProjectIdFromPathInfo('/_mimic/p/foo'))
+    self.assertEquals('foo', _GetProjectIdFromPathInfo('/_mimic/p/foo/bar'))
+    self.assertEquals('foo', _GetProjectIdFromPathInfo('/_mimic/p/foo/bar/'))
 
   def CheckProjectId(self, expected_value, header_value, query_value,
                      path_info_value, http_host_value, recent_query_value,
                      is_dev_mode):
+    environ = {}
     if header_value:
-      os.environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = header_value
+      environ['HTTP_X_APPENGINE_CURRENT_NAMESPACE'] = header_value
     else:
-      os.environ.pop('HTTP_X_APPENGINE_CURRENT_NAMESPACE', None)
+      environ.pop('HTTP_X_APPENGINE_CURRENT_NAMESPACE', None)
 
     if path_info_value:
-      os.environ['PATH_INFO'] = '/_mimic/p/{0}/'.format(path_info_value)
+      environ['PATH_INFO'] = '/_mimic/p/{0}/'.format(path_info_value)
     else:
-      os.environ['PATH_INFO'] = '/foo'
+      environ['PATH_INFO'] = '/foo'
 
     if http_host_value:
-      os.environ['HTTP_HOST'] = ('{0}-dot-your-app-id.appspot.com'
+      environ['HTTP_HOST'] = ('{0}-dot-your-app-id.appspot.com'
                                  .format(http_host_value))
     else:
-      os.environ['HTTP_HOST'] = 'your-app-id.appspot.com'
+      environ['HTTP_HOST'] = 'your-app-id.appspot.com'
 
     if query_value:
-      os.environ['QUERY_STRING'] = '_mimic_project={0}'.format(query_value)
+      environ['QUERY_STRING'] = '_mimic_project={0}'.format(query_value)
     else:
-      os.environ['QUERY_STRING'] = ''
+      environ['QUERY_STRING'] = ''
 
     mimic._dev_appserver_state['project_id'] = recent_query_value or None
 
+    # here we must use os.environ
     if is_dev_mode:
       os.environ['SERVER_SOFTWARE'] = 'Development/check-project-id'
     else:
       os.environ['SERVER_SOFTWARE'] = 'Production/check-project-id'
 
-    self.assertEquals(expected_value, mimic.GetProjectId())
+    self.assertEquals(expected_value, mimic.GetProjectId(environ))
 
   def testGetProjectId(self):
     """Verify how the project id is determined.
