@@ -426,8 +426,8 @@ class MatchHandlerTest(unittest.TestCase):
 
   def testStaticDir(self):
     def CheckHandler(url, static_dir):
-      handler = {'url': url, 'static_dir': static_dir, 'expiration': '10m'}
-      self.assertEquals(target_info.StaticPage('bar/x.html'),
+      handler = {'url': url, 'static_dir': static_dir, 'expiration': '5m'}
+      self.assertEquals(target_info.StaticPage('bar/x.html', expiration='5m'),
                         target_info._MatchHandler(handler, '/foo/x.html'))
       self.assertIsNone(target_info._MatchHandler(handler, '/notfoo/x.html'))
       self.assertIsNone(target_info._MatchHandler(handler, '/foox.html'))
@@ -440,8 +440,8 @@ class MatchHandlerTest(unittest.TestCase):
 
   def testStaticFiles(self):
     handler = {'url': '/x(.*)x', 'static_files': r'static/\1',
-               'expiration': '10m'}
-    self.assertEquals(target_info.StaticPage('static/foo'),
+               'expiration': '13m'}
+    self.assertEquals(target_info.StaticPage('static/foo', expiration='13m'),
                       target_info._MatchHandler(handler, '/xfoox'))
     self.assertIsNone(target_info._MatchHandler(handler, '/abc'))
 
@@ -468,11 +468,12 @@ class MatchHandlerTest(unittest.TestCase):
 
   def testStaticDirMimeType(self):
     def CheckMimeType(mime_type):
-      handler = {'url': '/foo', 'static_dir': 'bar', 'expiration': '10m'}
+      handler = {'url': '/foo', 'static_dir': 'bar', 'expiration': '6m'}
       if mime_type is not None:
         handler['mime_type'] = mime_type
       self.assertEquals(target_info.StaticPage('bar/x.html',
-                                               mime_type=mime_type),
+                                               mime_type=mime_type,
+                                               expiration='6m'),
                         target_info._MatchHandler(handler, '/foo/x.html'))
 
     CheckMimeType(None)
@@ -481,12 +482,14 @@ class MatchHandlerTest(unittest.TestCase):
 
   def testStaticFilesMimeType(self):
     def CheckMimeType(mime_type):
-      handler = {'url': '/x(.*)', 'static_files': r'static/\1',
-                 'expiration': '10m'}
+      handler = {'url': '/x(.*)',
+                 'static_files': r'static/\1',
+                 'expiration': '7m'}
       if mime_type is not None:
         handler['mime_type'] = mime_type
       self.assertEquals(target_info.StaticPage('static/foo.xyz',
-                                               mime_type=mime_type),
+                                               mime_type=mime_type,
+                                               expiration='7m'),
                         target_info._MatchHandler(handler, '/xfoo.xyz'))
 
     CheckMimeType(None)

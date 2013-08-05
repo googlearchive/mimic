@@ -332,13 +332,14 @@ class MimicTest(unittest.TestCase):
     self._CheckResponse(httplib.OK, 'text/html; charset=utf-8')
     self.assertEquals('<html>hello</html>', self._body)
 
-  def testAppYamlImplicitDefaultExpirationIsTenMinutes(self):
+  # Unlike production, mimic does not cache static resources for 10m by default
+  def testAppYamlNoImplicitDefaultExpiration(self):
     self._AddFile('app.yaml', MakeAppYaml())
     self._AddFile('static/foo.txt', '123')
     self._CallMimic('/foo.txt')
     self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('123', self._body)
-    self.assertResponseExpiration(600)  # 10 minutes
+    self.assertEquals(None, self._headers.get('Cache-Control'))
 
   def testAppYamlExplicitExpiration(self):
     self._AddFile('app.yaml', MakeAppYaml(expiration='2h'))
