@@ -324,7 +324,7 @@ def GetProjectIdFromPathInfo(environ):
   return m.group(1)
 
 
-def GetProjectId(environ):
+def GetProjectId(environ, use_sticky_project_id):
   """Returns the project id from the HTTP request.
 
   A number of sources for project id are tried in order. See implementation
@@ -332,6 +332,10 @@ def GetProjectId(environ):
   extracted from the query string is returned in subsequent requests if the
   project id cannot be otherwise determined.
 
+  Args:
+    environ: the WSGI or os environ to use
+    use_sticky_project_id: whether or not to remember the most recently
+                           encountered project_id, for use in the dev_appserver
   Returns:
     The project id or None.
   """
@@ -341,7 +345,7 @@ def GetProjectId(environ):
     return project_id
   project_id = GetProjectIdFromQueryParam(environ)
   if project_id:
-    if common.IsDevMode():
+    if use_sticky_project_id:
       _dev_appserver_state['project_id'] = project_id
     return project_id
   project_id = GetProjectIdFromPathInfo(environ)
@@ -350,13 +354,13 @@ def GetProjectId(environ):
   project_id = GetProjectIdFromHttpHost(environ)
   if project_id:
     return project_id
-  if common.IsDevMode():
+  if use_sticky_project_id:
     project_id = _dev_appserver_state.get('project_id')
   return project_id
 
 
 def GetNamespace():
-  namespace = GetProjectId(os.environ) or ''
+  namespace = GetProjectId(os.environ, common.IsDevMode()) or ''
   # throws BadValueError
   namespace_manager.validate_namespace(namespace)
   return namespace
