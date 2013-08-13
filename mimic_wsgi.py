@@ -52,6 +52,7 @@ class Mimic(object):
       yield self._ExceptionResponse(err.FormattedException())
       return
     except:  # pylint: disable-msg=W0702
+      # TODO: catch __iter__ exceptions using WSGI middleware
       exc_info = sys.exc_info()
       formatted_exception = traceback.format_exception(exc_info[0], exc_info[1],
                                                        exc_info[2])
