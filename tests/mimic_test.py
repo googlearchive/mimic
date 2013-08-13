@@ -498,6 +498,7 @@ class MimicTest(unittest.TestCase):
 
     # Must have project id subdomain
     self.CheckHostParseFailure('your-app-id.appspot.com')
+    self.CheckHostParseFailure('some-other-app-id.appspot.com')
 
   def testGetProjectIdFromHttpHostAppspotWithPort(self):
     os.environ['HTTP_HOST'] = 'project-id.your-app-id.appspot.com:12345'

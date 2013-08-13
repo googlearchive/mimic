@@ -273,6 +273,7 @@ def GetProjectIdFromHttpHost(environ):
   proj1.your-app-id.appspot.com:12345  ->  'proj1'
   proj1-dot-your-app-id.appspot.com    ->  'proj1'
   your-app-id.appspot.com              ->  None
+  some-other-app-id.appspot.com        ->  None
   www.mydomain.com                     ->  'www'
   proj2.www.mydomain.com               ->  'proj2'
   localhost                            ->  None
@@ -294,6 +295,7 @@ def GetProjectIdFromHttpHost(environ):
 
   if (http_host == 'localhost' or
       common.IPV4_REGEX.match(http_host) or
+      common.TOP_LEVEL_APPSPOT_COM_REGEX.match(http_host) or
       http_host == app_identity.get_default_version_hostname()):
     return None
 

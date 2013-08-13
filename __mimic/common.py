@@ -41,6 +41,11 @@ SHELL_PREFIX = '/_ah/shell'
 # TODO: consider https://code.google.com/p/ipaddr-py/
 IPV4_REGEX = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
 
+# match top level '*.appspot.com' hostnames
+# - matches 'foo.appspot.com' but not 'bar.foo.appspot.com'
+# - assumes '-dot-' has already been normalized to '.'
+TOP_LEVEL_APPSPOT_COM_REGEX = re.compile(r'^[^\.]+\.appspot\.com$')
+
 # memcache key space
 MEMCACHE_MANIFEST_PREFIX = 'manifest:'
 MEMCACHE_FILE_KEY_PREFIX = 'file:'
