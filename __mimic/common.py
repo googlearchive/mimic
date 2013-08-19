@@ -53,6 +53,20 @@ MEMCACHE_FILE_KEY_PREFIX = 'file:'
 # persisted names
 PERSIST_INDEX_NAME = 'index'
 
+# os.environ key representing 'X-AppEngine-QueueName' HTTP header,
+# which should only be present for 'offline' task queue requests, see
+# https://developers.google.com/appengine/docs/python/taskqueue/overview-push#Task_Execution
+HTTP_X_APPENGINE_QUEUENAME = 'HTTP_X_APPENGINE_QUEUENAME'
+
+# os.environ key representing 'X-AppEngine-Cron' HTTP header,
+# which should only be present for 'offline' cron requests, see
+# https://developers.google.com/appengine/docs/python/config/cron#Securing_URLs_for_Cron
+HTTP_X_APPENGINE_CRON = 'HTTP_X_APPENGINE_CRON'
+
+# os.environ key representing 'X-AppEngine-Current-Namespace' HTTP header,
+# which identifies the effective namespace when a task was created
+HTTP_X_APPENGINE_CURRENT_NAMESPACE = 'HTTP_X_APPENGINE_CURRENT_NAMESPACE'
+
 _requires_original_memcache_call_depth = 0
 
 

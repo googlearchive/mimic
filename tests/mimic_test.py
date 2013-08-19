@@ -473,7 +473,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', MakeAppYaml(login='admin'))
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
     self._CallMimic('/main.py',
-                    os_environ={mimic._HTTP_X_APPENGINE_CRON: 'true'})
+                    os_environ={'HTTP_X_APPENGINE_CRON': 'true'})
     self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('hello\n', self._body)
 
@@ -482,7 +482,7 @@ class MimicTest(unittest.TestCase):
     self._AddFile('app.yaml', MakeAppYaml(login='admin'))
     self._AddFile('main.py', _SIMPLE_CGI_SCRIPT)
     self._CallMimic('/main.py',
-                    os_environ={mimic._HTTP_X_APPENGINE_QUEUENAME: 'default'})
+                    os_environ={'HTTP_X_APPENGINE_QUEUENAME': 'default'})
     self._CheckResponse(httplib.OK, 'text/plain; charset=utf-8')
     self.assertEquals('hello\n', self._body)
 

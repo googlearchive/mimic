@@ -57,20 +57,6 @@ from google.appengine.api import users
 from google.appengine.ext.webapp.util import run_wsgi_app
 # pylint: enable-msg=g-import-not-at-top
 
-# os.environ key representing 'X-AppEngine-QueueName' HTTP header,
-# which should only be present for 'offline' task queue requests, see
-# https://developers.google.com/appengine/docs/python/taskqueue/overview-push#Task_Execution
-_HTTP_X_APPENGINE_QUEUENAME = 'HTTP_X_APPENGINE_QUEUENAME'
-
-# os.environ key representing 'X-AppEngine-Cron' HTTP header,
-# which should only be present for 'offline' cron requests, see
-# https://developers.google.com/appengine/docs/python/config/cron#Securing_URLs_for_Cron
-_HTTP_X_APPENGINE_CRON = 'HTTP_X_APPENGINE_CRON'
-
-# os.environ key representing 'X-AppEngine-Current-Namespace' HTTP header,
-# which identifies the effective namespace when a task was created
-_HTTP_X_APPENGINE_CURRENT_NAMESPACE = 'HTTP_X_APPENGINE_CURRENT_NAMESPACE'
-
 # TODO: see if "app.yaml" can be made into a link to the actual
 # app.yaml file in the user's workspace.
 _NOT_FOUND_PAGE = """
@@ -164,8 +150,8 @@ def _IsAuthorized(page, users_mod):
 
   # treat task queue and cron requests as admin equivalents
   # note: mimic currently does not actually provide cron support
-  if (os.environ.get(_HTTP_X_APPENGINE_QUEUENAME) or
-      os.environ.get(_HTTP_X_APPENGINE_CRON)):
+  if (os.environ.get(common.HTTP_X_APPENGINE_QUEUENAME) or
+      os.environ.get(common.HTTP_X_APPENGINE_CRON)):
     return True
 
   # login required and user is currently logged in
@@ -342,7 +328,7 @@ def GetProjectId(environ, use_sticky_project_id):
     The project id or None.
   """
   # for task queues, use persisted namespace as the project id
-  project_id = environ.get(_HTTP_X_APPENGINE_CURRENT_NAMESPACE)
+  project_id = environ.get(common.HTTP_X_APPENGINE_CURRENT_NAMESPACE)
   if project_id:
     return project_id
   project_id = GetProjectIdFromQueryParam(environ)
