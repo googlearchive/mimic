@@ -47,7 +47,9 @@ class Mimic(object):
     saved_out = sys.stdout
     sys.stdout = output
     try:
-      mimic.RunMimic(create_tree_func=common.config.CREATE_TREE_FUNC)
+      access_key = self.environ.get('mimic.access_key')
+      mimic.RunMimic(create_tree_func=common.config.CREATE_TREE_FUNC,
+                     access_key=access_key)
     except target_env.TargetAppError, err:
       yield self._ExceptionResponse(err.FormattedException())
       return

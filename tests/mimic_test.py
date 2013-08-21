@@ -216,8 +216,8 @@ class MimicTest(unittest.TestCase):
     os.environ.clear()
     os.environ.update(self._environ)
 
-  def _CreateTree(self, namespace):
-    tree = datastore_tree.DatastoreTree(namespace)
+  def _CreateTree(self, namespace, access_key):
+    tree = datastore_tree.DatastoreTree(namespace, access_key)
     for path, contents in self._files.items():
       tree.SetFile(path, contents)
     return tree
@@ -239,7 +239,7 @@ class MimicTest(unittest.TestCase):
     saved_out = sys.stdout
     try:
       sys.stdout = output
-      mimic.RunMimic(create_tree_func=self._CreateTree,
+      mimic.RunMimic(create_tree_func=self._CreateTree, access_key=None,
                      users_mod=self._users_mod)
     finally:
       sys.stdout = saved_out

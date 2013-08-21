@@ -134,8 +134,13 @@ class Tree(object):
   provide implementations of SetFile() and Clear().
   """
 
-  def __init__(self, namespace=''):
-    """Constructor which accepts a namespace argument."""
+  def __init__(self, namespace='', access_key=None):
+    """Constructor
+
+    Args:
+      namespace: the datastore/memcache namespace to use
+      access_key: key which provides access to this tree
+    """
     pass
 
   def IsMutable(self):

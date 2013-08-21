@@ -354,7 +354,7 @@ def GetNamespace():
   return namespace
 
 
-def RunMimic(create_tree_func, users_mod=users):
+def RunMimic(create_tree_func, access_key, users_mod=users):
   """Entry point for mimic.
 
   Args:
@@ -378,7 +378,7 @@ def RunMimic(create_tree_func, users_mod=users):
 
   if requires_tree:
     namespace = GetNamespace()
-    tree = create_tree_func(namespace)
+    tree = create_tree_func(namespace, access_key)
   else:
     tree = None
 
