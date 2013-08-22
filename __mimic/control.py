@@ -30,13 +30,6 @@ from google.appengine.api import channel
 from google.appengine.ext import webapp
 
 
-_CONTROL_PATHS_REQUIRING_TREE = [
-    common.CONTROL_PREFIX + '/clear',
-    common.CONTROL_PREFIX + '/delete',
-    common.CONTROL_PREFIX + '/dir',
-    common.CONTROL_PREFIX + '/file',
-    common.CONTROL_PREFIX + '/move',
-]
 _LOGGING_CLIENT_ID = 'logging'
 _MAX_LOG_MESSAGE = 1024  # will keep the channel message under the 32K Limit
 
@@ -265,7 +258,7 @@ class _VersionIdHandler(webapp.RequestHandler):
 
 def ControlRequestRequiresTree(path_info):
   """Determines if the control request (by path_info) requires a Tree."""
-  for handler_path in _CONTROL_PATHS_REQUIRING_TREE:
+  for handler_path in common.CONTROL_PATHS_REQUIRING_TREE:
     if path_info.startswith(handler_path):
       return True
   return False

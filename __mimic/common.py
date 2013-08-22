@@ -35,6 +35,13 @@ VERSION_ID = 1
 # URL path prefix for Mimic's control application
 CONTROL_PREFIX = '/_ah/mimic'
 
+CONTROL_PATHS_REQUIRING_TREE = [
+    CONTROL_PREFIX + '/clear',
+    CONTROL_PREFIX + '/delete',
+    CONTROL_PREFIX + '/dir',
+    CONTROL_PREFIX + '/file',
+    CONTROL_PREFIX + '/move',
+]
 # URL path prefix for accessing a Python shell
 SHELL_PREFIX = '/_ah/shell'
 
