@@ -42,6 +42,12 @@ CONTROL_PATHS_REQUIRING_TREE = [
     CONTROL_PREFIX + '/file',
     CONTROL_PREFIX + '/move',
 ]
+
+CONTROL_PATHS_REQUIRING_NAMESPACE = CONTROL_PATHS_REQUIRING_TREE + [
+    CONTROL_PREFIX + '/log',
+    CONTROL_PREFIX + '/index',
+]
+
 # URL path prefix for accessing a Python shell
 SHELL_PREFIX = '/_ah/shell'
 

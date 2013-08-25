@@ -1,25 +1,72 @@
 <!doctype html>
 <html>
   <head>
-    <script type="text/javascript" src='/_ah/channel/jsapi'></script>
+    <script type='text/javascript' src='/_ah/channel/jsapi'></script>
     <title>Mimic Log</title>
+    <style>
+.logs {
+  font-family: monospace;
+  line-height: 1.5em;
+}
+
+.ae-logs-severity {
+  width: 1.2em;
+  line-height: 1.2em;
+  border-radius: 2px;
+  text-align: center;
+  font-weight: bold;
+  margin: 0 0.3em;
+  display: inline-block;
+}
+.ae-logs-severity-DEBUG {
+  background-color: #09f;
+}
+.ae-logs-severity-INFO {
+  background-color: #3c0;
+}
+.ae-logs-severity-WARNING {
+  background-color: #fd0;
+}
+.ae-logs-severity-ERROR {
+  background-color: #f90;
+}
+.ae-logs-severity-CRITICAL {
+  background-color: #f22;
+}
+    </style>
   </head>
   <body>
     <script type='text/javascript'>
+      // We happily broadcast to any window which embeds us
+      var TARGET_ORIGIN = '*';
+      var TARGET_WINDOW = window.opener || window.parent;
+
+      // check whether query string contains 'mode=postMessage'
+      var POST_MESSAGE = window.location.search.substr(1).split('&').indexOf('mode=postMessage') > -1;
+
       addLogEntry = function(entry) {
-        var table = document.getElementById("output");
-        var row = table.insertRow(table.rows.length);
-        row.insertCell(0).innerHTML = new Date(entry.created * 1000);
-        row.insertCell(1).innerHTML = entry.levelname;
-        row.insertCell(2).innerHTML = entry.message;
+        var output = document.getElementById('output');
+        var div = document.createElement('div');
+        output.appendChild(div);
+        div.innerHTML = new Date(entry.created * 1000).toISOString() +
+                        '<div class="ae-logs-severity ae-logs-severity-' + entry.levelname + '">' +
+                        entry.levelname[0] +
+                        '</div>' +
+                        entry.message;
+        div.scrollIntoView();
       }
 
       onMessage = function(m) {
-        addLogEntry(JSON.parse(m.data));
+        entry = JSON.parse(m.data);
+        if (POST_MESSAGE) {
+          TARGET_WINDOW.postMessage({'log_entry': entry}, TARGET_ORIGIN);
+        } else {
+          addLogEntry(entry);
+        }
       }
 
       openChannel = function() {
-        var token = "%(token)s";
+        var token = '%(token)s';
         var channel = new goog.appengine.Channel(token);
         var socket = channel.open();
         socket.onmessage = onMessage;
@@ -31,8 +78,7 @@
 
       setTimeout(initialize, 100);
     </script>
-    <table id="output" border="0" summary="log messages">
-      <tr><th>Timestamp</th><th>Severity</th><th>Message</th></tr>
-    </table>
+    <div id='output' class='logs'>
+    </div>
   </body>
 </html>

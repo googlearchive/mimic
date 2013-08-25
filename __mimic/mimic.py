@@ -131,7 +131,7 @@ def ServeScriptPage(tree, config, page, namespace):
   logging.info('Serving script page %s', page.script_path)
   env = target_env.TargetEnvironment(tree, config, namespace)
   try:
-    env.RunScript(page.script_path, control.LoggingHandler())
+    env.RunScript(page.script_path, control.LoggingHandler(namespace))
   except target_env.ScriptNotFoundError:
     RespondWithStatus(httplib.NOT_FOUND,
                       data='Error: could not find script %s' % page.script_path)
@@ -372,18 +372,24 @@ def RunMimic(create_tree_func, access_key, users_mod=users):
   if is_control_request:
     # some control requests don't require a tree, like /version_id
     requires_tree = control.ControlRequestRequiresTree(path_info)
+    requires_namespace = control.ControlRequestRequiresNamespace(path_info)
   else:
     # requests to the target app always require a tree
     requires_tree = True
+    requires_namespace = True
+
+  if requires_namespace:
+    namespace = GetNamespace()
+  else:
+    namespace = None
 
   if requires_tree:
-    namespace = GetNamespace()
     tree = create_tree_func(namespace, access_key)
   else:
     tree = None
 
   if is_control_request:
-    run_wsgi_app(control.MakeControlApp(tree))
+    run_wsgi_app(control.MakeControlApp(tree, namespace))
   elif path_info.startswith(common.SHELL_PREFIX):
     run_wsgi_app(shell.MakeShellApp(tree, namespace))
   else:

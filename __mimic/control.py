@@ -30,7 +30,6 @@ from google.appengine.api import channel
 from google.appengine.ext import webapp
 
 
-_LOGGING_CLIENT_ID = 'logging'
 _MAX_LOG_MESSAGE = 1024  # will keep the channel message under the 32K Limit
 
 
@@ -201,7 +200,7 @@ class _LogRequestHandler(webapp.RequestHandler):
     path = os.path.join(parent, 'templates', 'log.html')
     with open(path) as f:
       data = f.read()
-    token = self._create_channel_fn(_LOGGING_CLIENT_ID)
+    token = self._create_channel_fn(self.app.config['namespace'])
     values = {
         'token': token,
     }
@@ -223,8 +222,9 @@ class _LogRequestHandler(webapp.RequestHandler):
 class LoggingHandler(logging.Handler):
   """A logging.LogHandler that sends log messages over a channel."""
 
-  def __init__(self, send_message_fn=channel.send_message):
+  def __init__(self, namespace, send_message_fn=channel.send_message):
     logging.Handler.__init__(self)
+    self.namespace = namespace
     self._send_message_fn = send_message_fn
     self._sending = False  # prevent recursive logging
 
@@ -242,7 +242,7 @@ class LoggingHandler(logging.Handler):
         'message': record.getMessage()[:_MAX_LOG_MESSAGE],
     }
     encoded = json.dumps(values)
-    self._send_message_fn(_LOGGING_CLIENT_ID, encoded)
+    self._send_message_fn(self.namespace, encoded)
     self._sending = False
 
 
@@ -256,6 +256,14 @@ class _VersionIdHandler(webapp.RequestHandler):
     self.response.out.write('version_id=%s\n' % str(common.VERSION_ID))
 
 
+def ControlRequestRequiresNamespace(path_info):
+  """Determines if the control request (by path_info) requires a namespace."""
+  for handler_path in common.CONTROL_PATHS_REQUIRING_NAMESPACE:
+    if path_info.startswith(handler_path):
+      return True
+  return False
+
+
 def ControlRequestRequiresTree(path_info):
   """Determines if the control request (by path_info) requires a Tree."""
   for handler_path in common.CONTROL_PATHS_REQUIRING_TREE:
@@ -265,7 +273,7 @@ def ControlRequestRequiresTree(path_info):
 
 
 # TODO: protect against XSRF
-def MakeControlApp(tree, create_channel_fn=channel.create_channel):
+def MakeControlApp(tree, namespace, create_channel_fn=channel.create_channel):
   """Create and return a WSGI application for controlling Mimic."""
   # standard handlers
   handlers = [
@@ -280,5 +288,6 @@ def MakeControlApp(tree, create_channel_fn=channel.create_channel):
   ]
   # prepend CONTROL_PREFIX to all handler paths
   handlers = [(common.CONTROL_PREFIX + p, h) for (p, h) in handlers]
-  config = {'tree': tree, 'create_channel_fn': create_channel_fn}
+  config = {'tree': tree, 'namespace': namespace,
+            'create_channel_fn': create_channel_fn}
   return webapp.WSGIApplication(handlers, debug=True, config=config)

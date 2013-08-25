@@ -71,7 +71,7 @@ class ControlAppTest(unittest.TestCase):
     else:
       self._tree = datastore_tree.DatastoreTree()
     self._application = control.MakeControlApp(
-        self._tree, create_channel_fn=_CreateFakeChannel)
+        self._tree, 'test_namespace', create_channel_fn=_CreateFakeChannel)
 
   def StartResponse(self, status, headers):
     """A WSGI start_response method."""
@@ -384,7 +384,7 @@ class ControlAppTest(unittest.TestCase):
     self.RunWSGI('/_ah/mimic/log')
     self.Check(httplib.OK)
     # output should have the logging token in it
-    self.assertIn('"token:logging"', self._output)
+    self.assertIn("'token:test_namespace'", self._output)
 
   def testIndex(self):
     composite_query._RecordIndex('foo')
@@ -417,11 +417,12 @@ foo""")
 class LoggingHandlerTest(unittest.TestCase):
   def setUp(self):
     self._values = None
-    self._handler = control.LoggingHandler(send_message_fn=self._SendMessage)
+    self._handler = control.LoggingHandler('test_channel_token',
+                                           send_message_fn=self._SendMessage)
 
   def _SendMessage(self, client_id, message):
     # check the client_id, decode and save the message
-    self.assertEquals(client_id, control._LOGGING_CLIENT_ID)
+    self.assertEquals(client_id, 'test_channel_token')
     self.assertIsNone(self._values)
     self._values = json.loads(message)
 
