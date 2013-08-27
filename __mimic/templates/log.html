@@ -37,46 +37,105 @@
   </head>
   <body>
     <script type='text/javascript'>
-      // We happily broadcast to any window which embeds us
-      var TARGET_ORIGIN = '*';
-      var TARGET_WINDOW = window.opener || window.parent;
+// We happily broadcast to any window which embeds us
+var TARGET_ORIGIN = '*';
+var TARGET_WINDOW = window.opener || window.parent;
 
-      // check whether query string contains 'mode=postMessage'
-      var POST_MESSAGE = window.location.search.substr(1).split('&').indexOf('mode=postMessage') > -1;
+// check whether query string contains 'debug=true'
+var DEBUG = window.location.search.substr(1).split('&')
+            .indexOf('debug=true') > -1;
 
-      addLogEntry = function(entry) {
-        var output = document.getElementById('output');
-        var div = document.createElement('div');
-        output.appendChild(div);
-        div.innerHTML = new Date(entry.created * 1000).toISOString() +
-                        '<div class="ae-logs-severity ae-logs-severity-' + entry.levelname + '">' +
-                        entry.levelname[0] +
-                        '</div>' +
-                        entry.message;
-        div.scrollIntoView();
-      }
+// check whether query string contains 'mode=postMessage'
+var POST_MESSAGE = window.location.search.substr(1).split('&')
+                   .indexOf('mode=postMessage') > -1;
 
-      onMessage = function(m) {
-        entry = JSON.parse(m.data);
-        if (POST_MESSAGE) {
-          TARGET_WINDOW.postMessage({'log_entry': entry}, TARGET_ORIGIN);
-        } else {
-          addLogEntry(entry);
-        }
-      }
+// token is injected at runtime by control.py
+var TOKEN = '%(token)s';
 
-      openChannel = function() {
-        var token = '%(token)s';
-        var channel = new goog.appengine.Channel(token);
-        var socket = channel.open();
-        socket.onmessage = onMessage;
-      }
 
-      initialize = function() {
-        openChannel();
-      }
 
-      setTimeout(initialize, 100);
+maybe_log = function() {
+  if (!DEBUG) {
+    return;
+  }
+  console.log.apply(console, arguments);
+}
+
+// See https://developers.google.com/appengine/docs/python/channel/javascript
+var channel = new goog.appengine.Channel(TOKEN);
+maybe_log('new goog.appengine.Channel(token=', TOKEN, ') ->', channel);
+
+var INITIAL_RETRY_DELAY_MS = 500;
+
+var retry_delay_ms = INITIAL_RETRY_DELAY_MS;
+
+show_log_entry = function(entry) {
+  var output = document.getElementById('output');
+  var div = document.createElement('div');
+  output.appendChild(div);
+  div.innerHTML = new Date(entry.created * 1000).toISOString() +
+                  '<div class="ae-logs-severity ae-logs-severity-' +
+                  entry.levelname + '">' +
+                  entry.levelname[0] +
+                  '</div>' +
+                  entry.message;
+  div.scrollIntoView();
+};
+
+maybe_send = function(msg) {
+  if (!POST_MESSAGE) {
+    return;
+  }
+  TARGET_WINDOW.postMessage(msg, TARGET_ORIGIN);
+};
+
+on_error = function(err) {
+  // expect err.code and err.description to be set
+  // err.description valyes include 'Invalid+token.' and 'Token+timed+out.'
+  maybe_log('socket.onerror(', err, ')');
+  maybe_send({'socket.onerror': err});
+  open_socket_with_backoff();
+};
+
+on_open = function(x) {
+  maybe_log('socket.onopen');
+  maybe_send({'socket.onopen': true});
+  retry_delay_ms = INITIAL_RETRY_DELAY_MS;
+};
+
+on_close = function(x) {
+  maybe_log('socket.onclose');
+  maybe_send({'socket.onclose': true});
+  open_socket_with_backoff();
+};
+
+on_message = function(msg) {
+  maybe_log('socket.onmessage(', msg, ')');
+  maybe_send({'socket.onmessage': msg});
+  if (!POST_MESSAGE) {
+    var log_entry = JSON.parse(msg.data);
+    show_log_entry(log_entry);
+  }
+};
+
+open_socket = function() {
+  maybe_log('channel.open()...');
+  var socket = channel.open();
+  maybe_log('got back socket=', socket);
+
+  socket.onopen = on_open;
+  socket.onmessage = on_message;
+  socket.onerror = on_error;
+  socket.onclose = on_close;
+};
+
+open_socket_with_backoff = function() {
+  setTimeout(open_socket, retry_delay_ms);
+  // exponential backoff + fuzz factor
+  retry_delay_ms = retry_delay_ms * (2 + Math.random());
+};
+
+window.addEventListener('load', open_socket);
     </script>
     <div id='output' class='logs'>
     </div>
