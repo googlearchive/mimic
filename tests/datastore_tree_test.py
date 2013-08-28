@@ -17,6 +17,7 @@
 """Unit tests for datastore_tree."""
 
 
+import os
 
 from __mimic import datastore_tree
 from tests import test_util
@@ -125,6 +126,24 @@ class DatastoreTreeTest(unittest.TestCase):
     # check that changes persist to a new instance
     tree = datastore_tree.DatastoreTree()
     self.assertEquals('xyz', tree.GetFileContents('/foo'))
+
+  def testLargeFile(self):
+    file_contents = ('abcdefghij' *
+                     (datastore_tree.MAX_BYTES_FOR_ENTITY / 10 + 1))
+    self._tree.SetFile('/large_file', file_contents)
+    self.assertEquals(file_contents, self._tree.GetFileContents('/large_file'))
+    self._tree.MoveFile('/large_file', '/new_file')
+    self.assertIsNone(self._tree.GetFileContents('/large_file'))
+    self.assertEquals(file_contents, self._tree.GetFileContents('/new_file'))
+    self._tree.DeletePath('/')
+    self.assertIsNone(self._tree.GetFileContents('/new_file'))
+
+  def testBinaryLargeFile(self):
+    file_contents = open(
+        os.path.join(os.path.dirname(__file__), 'testfiles', 'test.jpg'),
+        'rb').read()
+    self._tree.SetFile('/large_file', file_contents)
+    self.assertEquals(file_contents, self._tree.GetFileContents('/large_file'))
 
 
 if __name__ == '__main__':

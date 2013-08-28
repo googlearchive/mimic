@@ -23,6 +23,14 @@ from . import common
 
 from google.appengine.ext import ndb
 
+# The total entity size is 1048572 (1MB - 4), and having some margin below it.
+MAX_BYTES_FOR_ENTITY = 921600 # 900 kbytes
+
+
+def split_len(seq, length):
+  """A helper function for spliting a string or blob into sized chunks."""
+  return [seq[i:i+length] for i in range(0, len(seq), length)]
+
 
 # TODO: Unfortunately this model will pollute the target application's
 # Datastore.  The name (prefixed with _Ah) was chosen to minimize collision,
@@ -32,8 +40,25 @@ class _AhMimicFile(ndb.Model):
 
   The file's path should be used as the key for the entity.
   """
-  contents = ndb.BlobProperty(required=True)
+  contents = ndb.BlobProperty()
+  chunk_keys = ndb.KeyProperty(repeated=True, indexed=False)
   updated = ndb.DateTimeProperty(auto_now=True, indexed=False)
+
+  def get_contents(self):
+    if self.chunk_keys:
+      chunk_list = ndb.get_multi(self.chunk_keys)
+      contents_list = [chunk.contents for chunk in chunk_list]
+      return ''.join(contents_list)
+    else:
+      return self.contents
+
+
+class _AhMimicChunk(ndb.Model):
+  """A Model to store a chunk of file contents.
+
+  All of the siblings should have one single _AhMimicFile entity as a parent.
+  """
+  contents = ndb.BlobProperty()
 
 
 class DatastoreTree(common.Tree):
@@ -64,7 +89,7 @@ class DatastoreTree(common.Tree):
     entity = _AhMimicFile.get_by_id(path, parent=self.root)
     if entity is None:
       return None
-    return entity.contents
+    return entity.get_contents()
 
   def GetFileSize(self, path):
     contents = self.GetFileContents(path)
@@ -84,26 +109,59 @@ class DatastoreTree(common.Tree):
     entity = _AhMimicFile.get_by_id(path, parent=self.root)
     if entity is None:
       return False
-    self.SetFile(newpath, entity.contents)
-    entity.key.delete()
+    self.SetFile(newpath, entity.get_contents())
+    keys_to_delete = [entity.key]
+    if entity.chunk_keys:
+      keys_to_delete.extend(entity.chunk_keys)
+    ndb.delete_multi(keys_to_delete)
     return True
 
   def DeletePath(self, path):
     normpath = self._NormalizeDirectoryPath(path)
-    keys = _AhMimicFile.query(ancestor=self.root).fetch(keys_only=True)
-    keys = [k for k in keys if k.id() == path or k.id().startswith(normpath)]
+    keys = ndb.Query(ancestor=self.root).fetch(keys_only=True)
+    keys = [k for k in keys if
+            k.id() == path or
+            (k.string_id() and k.string_id().startswith(normpath)) or
+            k.parent().id() == path or
+            k.parent().id().startswith(normpath)]
     if not keys:
       return False
     ndb.delete_multi(keys)
     return True
 
   def Clear(self):
-    keys = _AhMimicFile.query(ancestor=self.root).fetch(keys_only=True)
+    keys = ndb.Query(ancestor=self.root).fetch(keys_only=True)
     ndb.delete_multi(keys)
 
+  @ndb.transactional
+  def SetFileChunks(self, path, contents):
+    chunk_keys = []
+    entities = []
+    index = 1
+    for chunk in split_len(contents, MAX_BYTES_FOR_ENTITY):
+
+      # The chunk might be OK without having the _AhMimicFile entity
+      # as a parent so that we can rename the file without moving the
+      # actual chunks. However, doing so forces us to retrieve the
+      # chunks property (instead of the keys only query) when
+      # deleting.
+      chunk_key = ndb.Key(pairs=[(self.root.kind(), self.root.id()),
+                                 (_AhMimicFile, path),
+                                 (_AhMimicChunk, index)],
+                          namespace=self.root.namespace())
+      chunk_keys.append(chunk_key)
+      entities.append(_AhMimicChunk(key=chunk_key, contents=chunk))
+      index += 1
+    entities.append(_AhMimicFile(id=path, parent=self.root,
+                                 chunk_keys=chunk_keys))
+    ndb.put_multi(entities)
+
   def SetFile(self, path, contents):
-    entity = _AhMimicFile(id=path, parent=self.root, contents=contents)
-    entity.put()
+    if len(contents) > MAX_BYTES_FOR_ENTITY:
+      self.SetFileChunks(path, contents)
+    else:
+      entity = _AhMimicFile(id=path, parent=self.root, contents=contents)
+      entity.put()
 
   def HasDirectory(self, path):
     path = self._NormalizeDirectoryPath(path)
