@@ -362,9 +362,6 @@ def RunMimic(create_tree_func, access_key, users_mod=users):
     users_mod: A users module to use for authentication (default is the
         AppEngine users module).
   """
-  # ensures that namespace_manager_default_namespace_for_request is used
-  namespace_manager.set_namespace(None)
-
   # use PATH_INFO to determine if this is a control or target request
   path_info = os.environ['PATH_INFO']
 
@@ -383,14 +380,22 @@ def RunMimic(create_tree_func, access_key, users_mod=users):
   else:
     namespace = None
 
-  if requires_tree:
-    tree = create_tree_func(namespace, access_key)
-  else:
-    tree = None
+  # Obtains the original namespace for later recovery in the finally clause.
+  saved_namespace = namespace_manager.get_namespace()
+  namespace_manager.set_namespace(namespace)
 
-  if is_control_request:
-    run_wsgi_app(control.MakeControlApp(tree, namespace))
-  elif path_info.startswith(common.SHELL_PREFIX):
-    run_wsgi_app(shell.MakeShellApp(tree, namespace))
-  else:
-    RunTargetApp(tree, path_info, namespace, users_mod)
+  try:
+    if requires_tree:
+      tree = create_tree_func(namespace, access_key)
+    else:
+      tree = None
+
+    if is_control_request:
+      run_wsgi_app(control.MakeControlApp(tree, namespace))
+    elif path_info.startswith(common.SHELL_PREFIX):
+      run_wsgi_app(shell.MakeShellApp(tree, namespace))
+    else:
+      RunTargetApp(tree, path_info, namespace, users_mod)
+  finally:
+    # Restore the original namespace
+    namespace_manager.set_namespace(saved_namespace)
