@@ -22,6 +22,7 @@ H1 {
 
 A {
   color: #15c;
+  cursor: pointer;
 }
 
 .traceback {
@@ -61,6 +62,22 @@ A {
 }
 
 </style>
+
+<script>
+// We happily broadcast to any window which embeds us
+var TARGET_ORIGIN = '*';
+var TARGET_WINDOW = window.opener || window.parent;
+
+function navigate_to(path, line_number) {
+  TARGET_WINDOW.postMessage({
+      'navigate_to': {
+          'path': path,
+          'line_number': line_number,
+      }
+  }, TARGET_ORIGIN);
+}
+</script>
+
 <head>
 <body>
   <h1>500 Uncaught exception</h1>
@@ -103,12 +120,13 @@ def ExcInfoAsHtml():
 
     (filename, line_number, function_name, text) = entry
     if not filename.startswith('/'):
-      href = ('<a href="{}:{}">{}</a>'.format(filename, line_number, filename))
+      link = ('''<a onclick="navigate_to('{}', {})">{}</a>'''
+              .format(filename, line_number, filename))
       filename = ('<span class="path">'
                   '<span class="important">{}</span>'
                   ' line <span class="line-number">{}</span>'
                   ' in </span>'
-                  .format(href, line_number))
+                  .format(link, line_number))
     else:
       path = filename[len(common_prefix):]
       filename = ('<span class="path">{}'
