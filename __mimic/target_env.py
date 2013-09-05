@@ -35,11 +35,13 @@ import sys
 import traceback
 
 from . import composite_query
+from . import target_errors
 from . import target_info
 from .util import patch
 
 from google.appengine.api import namespace_manager
 from google.appengine.ext.webapp.util import run_wsgi_app
+
 
 # See _MakeStatResult
 try:
@@ -700,7 +702,11 @@ class TargetEnvironment(object):
                                              'webapp_add_wsgi_middleware', None)
         if webapp_add_wsgi_middleware:
           wsgi_app = webapp_add_wsgi_middleware(wsgi_app)
-        # let exceptions bubble up
+        # install 500 error handler if app did not set one
+        error_handlers = getattr(wsgi_app, 'error_handlers', None)
+        if isinstance(error_handlers, dict):
+          if not error_handlers.get(500):
+            error_handlers[500] = target_errors.Wsgi500ErrorHandler
         run_wsgi_app(wsgi_app)
       else:
         module_name = self._FilePathToModuleName(loader.file_path)
