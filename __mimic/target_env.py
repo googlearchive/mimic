@@ -177,7 +177,7 @@ def _ConvertNewlines(data):
   return data
 
 
-def _MakeStatResult(mode, size=0):
+def _MakeStatResult(mode, size=0, mtime=None):
   """Creates a stat_result object given the mode and size of the file/folder.
 
   Note that we try to import the stat_result from both the posix and nt module
@@ -186,6 +186,7 @@ def _MakeStatResult(mode, size=0):
   Args:
     mode: File mode of the stat_result object to be returned.
     size: File size of the stat_result object to be returned, default 0.
+    mtime: File mtime of the stat_result object to be returned.
 
   Returns:
     stat_result object with the provided values.
@@ -196,6 +197,7 @@ def _MakeStatResult(mode, size=0):
   # TODO: should probably support ST_MTIME too
   stats[stat.ST_MODE] = mode
   stats[stat.ST_SIZE] = size
+  stats[stat.ST_MTIME] = mtime
   return _stat_result(stats)
 
 
@@ -818,7 +820,8 @@ class TargetEnvironment(object):
         raise OSError(errno.ENOENT, _ACCESSING_SKIPPED_FILE_ERROR_MSG % path)
       elif self._tree.HasFile(resolved_path):
         return _MakeStatResult(_FILE_STAT_MODE,
-                               self._tree.GetFileSize(resolved_path))
+                               self._tree.GetFileSize(resolved_path),
+                               self._tree.GetFileLastModified(path))
       elif self._tree.HasDirectory(resolved_path):
         return _MakeStatResult(_DIR_STAT_MODE)
       else:

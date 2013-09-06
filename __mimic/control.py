@@ -17,7 +17,7 @@
 """A simple web application to control Mimic."""
 
 
-
+import datetime
 import httplib
 import json
 import logging
@@ -131,8 +131,11 @@ class _FileHandler(_TreeHandler):
       self.error(httplib.NOT_FOUND)
       self.response.write('File does not exist: %s' % path)
       return
+    last_modified = self._tree.GetFileLastModified(path)
+    last_modified_str = last_modified.strftime(common.RFC_1123_DATE_FORMAT)
     self.response.headers['Content-Type'] = common.GuessMimeType(path)
     self.response.headers['X-Content-Type-Options'] = 'nosniff'
+    self.response.headers['Last-Modified'] = last_modified_str
     self.response.out.write(data)
 
   def put(self):  # pylint: disable-msg=C6409

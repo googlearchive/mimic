@@ -17,6 +17,7 @@
 """Unit tests for control.py."""
 
 import cStringIO
+import datetime
 import httplib
 import json
 import logging
@@ -146,10 +147,13 @@ class ControlAppTest(unittest.TestCase):
 
   def testGetFileContents(self):
     self._tree.SetFile('foo.html', '123')
+    now = datetime.datetime.now()
+    time_created = now.strftime(common.RFC_1123_DATE_FORMAT)
     self.RunWSGI('/_ah/mimic/file?path=foo.html')
     headers = {
         'Content-Length': '3',
         'Content-Type': 'text/html; charset=utf-8',
+        'Last-Modified': time_created,
         'Cache-Control': 'no-cache',
         'X-Content-Type-Options': 'nosniff',
     }
@@ -157,11 +161,14 @@ class ControlAppTest(unittest.TestCase):
 
   def testGetFileContentsAllowedHost(self):
     self._tree.SetFile('foo.html', '123')
+    now = datetime.datetime.now()
+    time_created = now.strftime(common.RFC_1123_DATE_FORMAT)
     common.config.ALLOWED_USER_CONTENT_HOSTS = ['allowed-host.com']
     self.RunWSGI('/_ah/mimic/file?path=foo.html', host='allowed-host.com')
     headers = {
         'Content-Length': '3',
         'Content-Type': 'text/html; charset=utf-8',
+        'Last-Modified': time_created,
         'Cache-Control': 'no-cache',
         'X-Content-Type-Options': 'nosniff',
     }
@@ -180,11 +187,14 @@ class ControlAppTest(unittest.TestCase):
 
   def testGetFileContentsAlternateContentType(self):
     self._tree.SetFile('foo.css', 'pretty')
+    now = datetime.datetime.now()
+    time_created = now.strftime(common.RFC_1123_DATE_FORMAT)
     self.RunWSGI('/_ah/mimic/file?path=foo.css')
     headers = {
         'Content-Length': '6',
         'Content-Type': 'text/css; charset=utf-8',
         'Cache-Control': 'no-cache',
+        'Last-Modified': time_created,
         'X-Content-Type-Options': 'nosniff',
     }
     self.Check(httplib.OK, headers=headers, output='pretty')

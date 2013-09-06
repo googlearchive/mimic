@@ -1025,12 +1025,14 @@ stats = os.stat('template.html')
 logging.info(stats[stat.ST_MODE])
 # also test accessing the stat values as attributes
 logging.info(stats.st_size)
+logging.info(stats.st_mtime)
 """)
     handler = CollectingHandler()
     self._env.RunScript('main.py', handler)
     self.assertEqual(str(target_env._FILE_STAT_MODE),
                      handler.records[0].getMessage())
     self.assertEqual('13', handler.records[1].getMessage())
+    self.assertIsNotNone(handler.records[2].getMessage())
 
   def testStatOnDirectory(self):
     """Tests patched stat on a directory in the target file system."""

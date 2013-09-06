@@ -48,6 +48,8 @@ CONTROL_PATHS_REQUIRING_NAMESPACE = CONTROL_PATHS_REQUIRING_TREE + [
     CONTROL_PREFIX + '/index',
 ]
 
+RFC_1123_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"
+
 # URL path prefix for accessing a Python shell
 SHELL_PREFIX = '/_ah/shell'
 
@@ -180,6 +182,18 @@ class Tree(object):
 
     Returns:
       The file's size in bytes, or None if the file does not exist.
+    """
+    raise NotImplementedError
+
+  def GetFileLastModified(self, path):
+    """Returns the time that a file was last updated. 
+
+    Args:
+      path: The full path for the file.
+
+    Returns:
+      The datetime object that represents the time the file was last updated,
+      or None if the file does not exist.
     """
     raise NotImplementedError
 

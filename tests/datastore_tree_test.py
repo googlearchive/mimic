@@ -19,9 +19,11 @@
 
 import os
 
+from __mimic import common
 from __mimic import datastore_tree
 from tests import test_util
 
+import datetime
 import unittest
 
 
@@ -34,6 +36,7 @@ class DatastoreTreeTest(unittest.TestCase):
     self._tree.Clear()
     self._tree.SetFile('/foo', '123')
     self._tree.SetFile('/bar', '456')
+    self.time_created = datetime.datetime.now()
 
   def testIsMutable(self):
     self.assertTrue(self._tree.IsMutable())
@@ -51,6 +54,13 @@ class DatastoreTreeTest(unittest.TestCase):
   def testGetFileSize(self):
     self.assertEquals(3, self._tree.GetFileSize('/foo'))
     self.assertIsNone(self._tree.GetFileSize('/fooz'))
+
+  def testGetFileLastModified(self):
+    time_modified = self._tree.GetFileLastModified('/foo')
+    time_modified_str = time_modified.strftime(common.RFC_1123_DATE_FORMAT)
+    time_created_str = self.time_created.strftime(common.RFC_1123_DATE_FORMAT)
+    self.assertEquals(time_modified_str, time_created_str)
+    self.assertIsInstance(self._tree.GetFileLastModified('/bar'), datetime.datetime)
 
   def testMoveFile(self):
     self.assertTrue(self._tree.HasFile('/foo'))
