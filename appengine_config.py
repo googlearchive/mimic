@@ -10,6 +10,7 @@ from __mimic import mimic
 from google.appengine.api import app_identity
 
 
+# pylint: disable-msg=invalid-name
 mimic_CREATE_TREE_FUNC = datastore_tree.DatastoreTree
 
 mimic_JSON_ENCODER = json.JSONEncoder()  # pylint: disable-msg=g-bad-name

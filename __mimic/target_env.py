@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +44,7 @@ from google.appengine.ext.webapp.util import run_wsgi_app
 # See _MakeStatResult
 try:
   import posix  # pylint: disable-msg=C6204
-  _stat_result = posix.stat_result
+  _stat_result = posix.stat_result  # pylint:disable-msg=invalid-name
 except ImportError:
   # try windows if posix isn't available (likely running tests locally on
   # windows. posix is available on app engine)
@@ -767,6 +765,7 @@ class TargetEnvironment(object):
 
   @patch.NeedsOriginal
   def _ListDir(self, original, path):
+    """List directory content."""
     use_unicode = isinstance(path, unicode)
     in_target, path = _ResolvePath(path)
     if in_target:

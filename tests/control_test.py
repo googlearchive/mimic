@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +19,8 @@ import datetime
 import httplib
 import json
 import logging
-import re
 import time
-import urllib
+import unittest
 
 
 # Import test_util first, to ensure python27 / webapp2 are setup correctly
@@ -33,8 +30,6 @@ from __mimic import common  # pylint: disable-msg=C6203
 from __mimic import composite_query
 from __mimic import control
 from __mimic import datastore_tree
-
-import unittest
 
 
 _VERSION_STRING_FORMAT = """\
@@ -52,7 +47,7 @@ class ControlAppTest(unittest.TestCase):
 
   def setUp(self, tree=None):
     test_util.InitAppHostingApi()
-    self.setUpApplication(tree)
+    self.SetUpApplication(tree)
     # these are updated after StartResponse is called
     self._status = None
     self._headers = None
@@ -65,7 +60,7 @@ class ControlAppTest(unittest.TestCase):
 
     common.config.ALLOWED_USER_CONTENT_HOSTS = None
 
-  def setUpApplication(self, tree=None):
+  def SetUpApplication(self, tree=None):
     """Sets up the control application and its tree."""
     if tree:
       self._tree = tree
@@ -274,7 +269,7 @@ class ControlAppTest(unittest.TestCase):
       def IsMutable(self):
         return True
 
-    self.setUpApplication(MutableTree())
+    self.SetUpApplication(MutableTree())
     self.RunWSGI('/_ah/mimic/delete?path=foo.html', method='POST', data='')
     self.Check(httplib.OK)
     self.assertEqual(self._tree.path, 'foo.html')
@@ -288,7 +283,7 @@ class ControlAppTest(unittest.TestCase):
       def IsMutable(self):
         return False
 
-    self.setUpApplication(ImmutableTree())
+    self.SetUpApplication(ImmutableTree())
     self.RunWSGI('/_ah/mimic/delete?path=foo.html', method='POST', data='')
     self.Check(httplib.BAD_REQUEST)
 
@@ -298,7 +293,7 @@ class ControlAppTest(unittest.TestCase):
         self.path = path
         return ['a.txt', 'foo.bar']
 
-    self.setUpApplication(FakeTree())
+    self.SetUpApplication(FakeTree())
     self.RunWSGI('/_ah/mimic/dir', method='GET')
     expected_headers = {
         'Content-Length': '123',
@@ -321,7 +316,7 @@ class ControlAppTest(unittest.TestCase):
       def IsMutable(self):
         return True
 
-    self.setUpApplication(MutableTree())
+    self.SetUpApplication(MutableTree())
     self.RunWSGI('/_ah/mimic/file?path=foo.html', method='PUT', data='abc')
     self.Check(httplib.OK, output={'path': 'foo.html',
                                    'mime_type': 'text/html; charset=utf-8'})
@@ -337,7 +332,7 @@ class ControlAppTest(unittest.TestCase):
       def IsMutable(self):
         return False
 
-    self.setUpApplication(ImmutableTree())
+    self.SetUpApplication(ImmutableTree())
     self.RunWSGI('/_ah/mimic/file?path=foo.html', method='PUT', data='abc')
     self.Check(httplib.BAD_REQUEST)
 
@@ -350,7 +345,7 @@ class ControlAppTest(unittest.TestCase):
       def IsMutable(self):
         return True
 
-    self.setUpApplication(MutableTree())
+    self.SetUpApplication(MutableTree())
     self.RunWSGI('/_ah/mimic/move?path=foo.html&newpath=bar.txt',
                  method='POST', data='')
     self.Check(httplib.OK)
@@ -371,7 +366,7 @@ class ControlAppTest(unittest.TestCase):
       def IsMutable(self):
         return False
 
-    self.setUpApplication(ImmutableTree())
+    self.SetUpApplication(ImmutableTree())
     self.RunWSGI('/_ah/mimic/move?path=foo.html&newpath=bar.txt',
                  method='POST', data='')
     self.Check(httplib.BAD_REQUEST)
@@ -386,7 +381,7 @@ class ControlAppTest(unittest.TestCase):
       def IsMutable(self):
         return False
 
-    self.setUpApplication(ImmutableTree())
+    self.SetUpApplication(ImmutableTree())
     self.RunWSGI('/_ah/mimic/clear', method='POST', data='')
     self.Check(httplib.BAD_REQUEST)
 

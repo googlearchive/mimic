@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -105,6 +103,7 @@ def _WidenQueryProto(query_pb):
 
 @patch.NeedsOriginal
 def _CustomQueryRun(original, query, conn, query_options=None):
+  """Patched datastore_query.Query.run() method."""
   query_pb = query._to_pb(conn, query_options)  # pylint: disable-msg=W0212
   # Check if composite index is required.
   req, kind, ancestor, props = datastore_index.CompositeIndexForQuery(query_pb)

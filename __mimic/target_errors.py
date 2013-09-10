@@ -90,6 +90,7 @@ _ERROR_HTML_EPILOGUE = """
 </html>
 """
 
+
 def CommonDirectories(paths):
   """Determine common set of directories among a list of directories."""
 
@@ -103,6 +104,7 @@ def CommonDirectories(paths):
 
 # Common ancestors of sys.path entries
 _SYS_PATH_COMMON_DIRS = CommonDirectories(sys.path)
+
 
 def _GetLongestPrefix(path):
   match = ''
@@ -120,7 +122,7 @@ def ExcInfoAsHtml():
 
     (filename, line_number, function_name, text) = entry
     if not filename.startswith('/'):
-      link = ('''<a onclick="navigate_to('{}', {})">{}</a>'''
+      link = ("""<a onclick="navigate_to('{}', {})">{}</a>"""
               .format(filename, line_number, filename))
       filename = ('<span class="path">'
                   '<span class="important">{}</span>'
@@ -154,6 +156,8 @@ def ExcInfoAsHtml():
   html.append(_ERROR_HTML_EPILOGUE)
   return ''.join(html)
 
+
+# pylint: disable-msg=unused-argument
 def Wsgi500ErrorHandler(request, response, exception):
   """WSGI fallback error handler for HTTP 500 errors."""
 

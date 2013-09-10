@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +15,6 @@
 """A simple web application to control Mimic."""
 
 
-import datetime
 import httplib
 import json
 import logging
@@ -41,7 +38,8 @@ class _TreeHandler(webapp.RequestHandler):
     webapp.RequestHandler.initialize(self, request, response)
     self._tree = self.app.config.get('tree')
 
-  def _CheckCors(self):
+  def _HandleCorsResponse(self):
+    """Take care of CORS reponses."""
     origin = self.request.headers.get('Origin')
     # If not a CORS request, do nothing
     if not origin:
@@ -60,7 +58,7 @@ class _TreeHandler(webapp.RequestHandler):
     self.response.headers['Access-Control-Allow-Headers'] = allowed_headers
     self.response.headers['Access-Control-Allow-Credentials'] = 'true'
 
-  def dispatch(self):  # pylint: disable-msg=g-bad-name
+  def dispatch(self):  # pylint: disable-msg=g-bad-name,missing-docstring
     if (common.config.ALLOWED_USER_CONTENT_HOSTS and
         self.request.host not in common.config.ALLOWED_USER_CONTENT_HOSTS):
       self.response.set_status(httplib.FORBIDDEN)
@@ -70,7 +68,7 @@ class _TreeHandler(webapp.RequestHandler):
       return
     # explicit mixed case 'Content-Type' for dev_appserver tests
     self.response.headers['Content-Type'] = 'text/html; charset=utf-8'
-    self._CheckCors()
+    self._HandleCorsResponse()
     super(_TreeHandler, self).dispatch()
 
   def options(self):  # pylint: disable-msg=g-bad-name

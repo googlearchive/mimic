@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,13 +15,12 @@
 """Unit tests for common.py."""
 
 
+import unittest
 
 from __mimic import common
 from tests import test_util
 
 from google.appengine.api import memcache
-
-import unittest
 
 
 class PersistTest(unittest.TestCase):

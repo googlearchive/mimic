@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,10 +22,10 @@ from . import common
 from google.appengine.ext import ndb
 
 # The total entity size is 1048572 (1MB - 4), and having some margin below it.
-MAX_BYTES_FOR_ENTITY = 921600 # 900 kbytes
+MAX_BYTES_FOR_ENTITY = 921600  # 900 kbytes
 
 
-def split_len(seq, length):
+def _SplitByLength(seq, length):
   """A helper function for spliting a string or blob into sized chunks."""
   return [seq[i:i+length] for i in range(0, len(seq), length)]
 
@@ -44,7 +42,7 @@ class _AhMimicFile(ndb.Model):
   chunk_keys = ndb.KeyProperty(repeated=True, indexed=False)
   updated = ndb.DateTimeProperty(auto_now=True, indexed=False)
 
-  def get_contents(self):
+  def GetContents(self):
     if self.chunk_keys:
       chunk_list = ndb.get_multi(self.chunk_keys)
       contents_list = [chunk.contents for chunk in chunk_list]
@@ -64,6 +62,7 @@ class _AhMimicChunk(ndb.Model):
 class DatastoreTree(common.Tree):
   """An implementation of Tree backed by Datastore."""
 
+  # pylint:disable-msg=unused-argument
   def __init__(self, namespace='', access_key=None):
     super(DatastoreTree, self).__init__(namespace)
     # Having a root entity key allows us to use ancestor queries for strong
@@ -89,7 +88,7 @@ class DatastoreTree(common.Tree):
     entity = _AhMimicFile.get_by_id(path, parent=self.root)
     if entity is None:
       return None
-    return entity.get_contents()
+    return entity.GetContents()
 
   def GetFileSize(self, path):
     contents = self.GetFileContents(path)
@@ -115,7 +114,7 @@ class DatastoreTree(common.Tree):
     entity = _AhMimicFile.get_by_id(path, parent=self.root)
     if entity is None:
       return False
-    self.SetFile(newpath, entity.get_contents())
+    self.SetFile(newpath, entity.GetContents())
     keys_to_delete = [entity.key]
     if entity.chunk_keys:
       keys_to_delete.extend(entity.chunk_keys)
@@ -123,6 +122,7 @@ class DatastoreTree(common.Tree):
     return True
 
   def DeletePath(self, path):
+    """Delete files with specified leading path."""
     normpath = self._NormalizeDirectoryPath(path)
     keys = ndb.Query(ancestor=self.root).fetch(keys_only=True)
     keys = [k for k in keys if
@@ -140,11 +140,12 @@ class DatastoreTree(common.Tree):
     ndb.delete_multi(keys)
 
   @ndb.transactional
-  def SetFileChunks(self, path, contents):
+  def _SetFileChunks(self, path, contents):
+    """Put individual file chunks."""
     chunk_keys = []
     entities = []
     index = 1
-    for chunk in split_len(contents, MAX_BYTES_FOR_ENTITY):
+    for chunk in _SplitByLength(contents, MAX_BYTES_FOR_ENTITY):
 
       # The chunk might be OK without having the _AhMimicFile entity
       # as a parent so that we can rename the file without moving the
@@ -164,7 +165,7 @@ class DatastoreTree(common.Tree):
 
   def SetFile(self, path, contents):
     if len(contents) > MAX_BYTES_FOR_ENTITY:
-      self.SetFileChunks(path, contents)
+      self._SetFileChunks(path, contents)
     else:
       entity = _AhMimicFile(id=path, parent=self.root, contents=contents)
       entity.put()
@@ -180,6 +181,7 @@ class DatastoreTree(common.Tree):
     return False
 
   def ListDirectory(self, path):
+    """Enumerate directory contents with leading path."""
     path = self._NormalizeDirectoryPath(path)
     # TODO: optimize by using a more structured tree representation
     keys = _AhMimicFile.query(ancestor=self.root).iter(keys_only=True)

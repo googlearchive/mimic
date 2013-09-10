@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -130,7 +128,7 @@ class Page(object):
             self.__dict__ == other.__dict__)
 
   def __ne__(self, other):
-    return not self == other
+    return self != other
 
 
 class StaticPage(Page):

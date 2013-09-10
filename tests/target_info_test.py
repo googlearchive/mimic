@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -325,7 +323,7 @@ builtins:
         'url': '/x(.*)x',
         'static_files': r'static/\1',
         'upload': 'static/.*'
-    },{
+    }, {
         'url': '/y(.*)y',
         'script': 'y.app',
     }])
@@ -397,7 +395,7 @@ libraries:
     self.CheckError(config)
 
   def testSkipFiles(self):
-    config = yaml.load(APP_YAML + """
+    config = yaml.load(APP_YAML + r"""
 skip_files:
 - ^(.*/)?skip_folder.*
 - ^(.*/)?README\.txt

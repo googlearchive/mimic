@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,14 +15,13 @@
 """Unit tests for datastore_tree."""
 
 
+import datetime
 import os
+import unittest
 
 from __mimic import common
 from __mimic import datastore_tree
 from tests import test_util
-
-import datetime
-import unittest
 
 
 class DatastoreTreeTest(unittest.TestCase):
@@ -60,7 +57,8 @@ class DatastoreTreeTest(unittest.TestCase):
     time_modified_str = time_modified.strftime(common.RFC_1123_DATE_FORMAT)
     time_created_str = self.time_created.strftime(common.RFC_1123_DATE_FORMAT)
     self.assertEquals(time_modified_str, time_created_str)
-    self.assertIsInstance(self._tree.GetFileLastModified('/bar'), datetime.datetime)
+    self.assertIsInstance(self._tree.GetFileLastModified('/bar'),
+                          datetime.datetime)
 
   def testMoveFile(self):
     self.assertTrue(self._tree.HasFile('/foo'))

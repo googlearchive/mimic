@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,15 +49,8 @@ class Mimic(object):
       access_key = self.environ.get('mimic.access_key')
       mimic.RunMimic(create_tree_func=common.config.CREATE_TREE_FUNC,
                      access_key=access_key)
-    except target_env.TargetAppError, err:
-      yield self._ExceptionResponse(err.FormattedException())
-      return
-    except:  # pylint: disable-msg=W0702
-      # TODO: catch __iter__ exceptions using WSGI middleware
-      exc_info = sys.exc_info()
-      formatted_exception = traceback.format_exception(exc_info[0], exc_info[1],
-                                                       exc_info[2])
-      yield self._ExceptionResponse(formatted_exception)
+    except Exception:
+      yield self._ExceptionResponse()
       return
     finally:
       sys.stdin = saved_in
@@ -67,13 +58,17 @@ class Mimic(object):
     response = output.getvalue()
     yield self._NormalResponse(response)
 
-  def _ExceptionResponse(self, formatted_exception):
+  def _ExceptionResponse(self):
+    """Generate an error response."""
+
     status = '500 Server Error'
     response_headers = [('Content-type', 'text/html; charset=utf-8')]
     self.start_response(status, response_headers)
     return target_errors.ExcInfoAsHtml()
 
   def _NormalResponse(self, response):
+    """Generate a non-error response."""
+
     # Modelled after appengine/runtime/nacl/python/cgi.py
     parser = feedparser.FeedParser()
     # Set headersonly as we never want to parse the body as an email message.
@@ -88,5 +83,3 @@ class Mimic(object):
     response_headers = parsed_response.items()
     self.start_response(status, response_headers)
     return parsed_response.get_payload()
-
-app = Mimic

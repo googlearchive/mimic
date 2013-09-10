@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,6 +15,7 @@
 """Unit tests for composite_query.py."""
 
 
+import unittest
 
 from __mimic import common
 from __mimic import composite_query
@@ -24,8 +23,6 @@ from tests import test_util
 
 from google.appengine.api import datastore_errors
 from google.appengine.ext import db
-
-import unittest
 
 # A query limit large enough to return all data.
 _BIG_ENOUGH = 100

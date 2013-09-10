@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,28 +32,19 @@ import rfc822
 import sys
 import time
 import urlparse
-
+import yaml
 
 from . import common
 from . import control
 from . import shell
 from . import target_env
 from . import target_info
-import yaml
 
 from google.appengine.api import app_identity
-# pylint: disable-msg=g-import-not-at-top
-try:
-  from google.appengine.api import appinfo
-except ImportError:
-  # import parts of the google.appengine.api.appinfo package (extracted from
-  # the local SDK by sdkapi.sh), since the appinfo package is currently
-  # unavailable in the App Engine production environment
-  from sdkapi import appinfo
+from google.appengine.api import appinfo
 from google.appengine.api import namespace_manager
 from google.appengine.api import users
 from google.appengine.ext.webapp.util import run_wsgi_app
-# pylint: enable-msg=g-import-not-at-top
 
 # TODO: see if "app.yaml" can be made into a link to the actual
 # app.yaml file in the user's workspace.
@@ -138,6 +127,7 @@ def ServeScriptPage(tree, config, page, namespace):
 
 
 def _IsAuthorized(page, users_mod):
+  """Check whether access to the page is authorized."""
   # page does not require login
   if page.login == target_info.LOGIN_NONE:
     return True
@@ -162,7 +152,8 @@ def _IsAuthorized(page, users_mod):
   return False
 
 
-def _GetUrl(force_https=False):
+def _CurrentUrl(force_https=False):
+  """Reconstruct the current URL."""
   if force_https:
     scheme = 'https'
   else:
@@ -212,19 +203,19 @@ def RunTargetApp(tree, path_info, namespace, users_mod):
   if (page.secure == target_info.SECURE_ALWAYS
       and not common.IsDevMode()
       and os.environ['wsgi.url_scheme'] != 'https'):
-    https_url = _GetUrl(force_https=True)
+    https_url = _CurrentUrl(force_https=True)
     RespondWithStatus(httplib.FOUND, headers=[('Location', https_url)])
     return
 
   if not _IsAuthorized(page, users_mod):
     user = users_mod.get_current_user()
     if user:
-      url = users_mod.create_logout_url(_GetUrl())
+      url = users_mod.create_logout_url(_CurrentUrl())
       message = ('User <b>{0}</b> is not authorized to view this page.<br>'
                  'Please <a href="{1}">logout</a> and then login as an '
                  'authorized user.'.format(user.nickname(), url))
     else:
-      url = users_mod.create_login_url(_GetUrl())
+      url = users_mod.create_login_url(_CurrentUrl())
       message = ('You are not authorized to view this page. '
                  'You may need to <a href="{0}">login</a>.'.format(url))
     RespondWithStatus(httplib.FORBIDDEN, data=message,
@@ -266,6 +257,8 @@ def GetProjectIdFromHttpHost(environ):
   localhost:8080                       ->  None
   192.168.0.1                          ->  None
 
+  Args:
+    environ: The request environ.
   Returns:
     The project id or None.
   """
@@ -291,6 +284,8 @@ def GetProjectIdFromHttpHost(environ):
 def GetProjectIdFromQueryParam(environ):
   """Returns the project id from the query string.
 
+  Args:
+    environ: The request environ.
   Returns:
     The project id or None.
   """
@@ -304,7 +299,13 @@ def GetProjectIdFromQueryParam(environ):
 
 
 def GetProjectIdFromPathInfo(environ):
-  """Returns the project id from the request path."""
+  """Returns the project id from the request path.
+
+  Args:
+    environ: The request environ.
+  Returns:
+    The project id or None.
+  """
   path_info = environ['PATH_INFO']
   m = common.config.PROJECT_ID_FROM_PATH_INFO_RE.match(path_info)
   if not m:
@@ -321,7 +322,7 @@ def GetProjectId(environ, use_sticky_project_id):
   project id cannot be otherwise determined.
 
   Args:
-    environ: the WSGI or os environ to use
+    environ: The request environ.
     use_sticky_project_id: whether or not to remember the most recently
                            encountered project_id, for use in the dev_appserver
   Returns:
@@ -359,6 +360,7 @@ def RunMimic(create_tree_func, access_key, users_mod=users):
 
   Args:
     create_tree_func: A callable that creates a common.Tree.
+    access_key: Key which grants access to the tree
     users_mod: A users module to use for authentication (default is the
         AppEngine users module).
   """

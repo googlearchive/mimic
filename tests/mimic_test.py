@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +18,6 @@ import cStringIO
 from email import feedparser
 import httplib
 import os
-import re
 import sys
 
 
@@ -31,7 +28,6 @@ from tests import test_util  # pylint: disable-msg=C6203,C6204
 from __mimic import common  # pylint: disable-msg=C6203
 from __mimic import datastore_tree
 from __mimic import mimic
-import yaml
 
 import unittest
 
@@ -178,10 +174,10 @@ class FakeUsersMod(object):
   def get_current_user(self):  # pylint: disable-msg=C6409
     return self._current_user
 
-  def create_login_url(self, continue_url):
+  def create_login_url(self, continue_url):  # pylint: disable-msg=invalid-name
     return '/_ah/login?continue={0}'.format(continue_url)
 
-  def create_logout_url(self, continue_url):
+  def create_logout_url(self, continue_url):  # pylint: disable-msg=invalid-name
     return '/_ah/logout?continue={0}'.format(continue_url)
 
 
@@ -611,7 +607,7 @@ class MimicTest(unittest.TestCase):
 
     if http_host_value:
       environ['HTTP_HOST'] = ('{0}-dot-your-app-id.appspot.com'
-                                 .format(http_host_value))
+                              .format(http_host_value))
     else:
       environ['HTTP_HOST'] = 'your-app-id.appspot.com'
 
@@ -736,11 +732,13 @@ for p in people:
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
 
     # Two different projects put two people with the same key_name ('person')
-    self._CallMimic('/put.py?JohnDoe', http_host='proj1.your-app-id.appspot.com')
+    self._CallMimic('/put.py?JohnDoe',
+                    http_host='proj1.your-app-id.appspot.com')
     # make sure it parsed the query arg correctly
     self.assertEquals('name: JohnDoe\n', self._body)
 
-    self._CallMimic('/put.py?JaneDoe', http_host='proj2.your-app-id.appspot.com')
+    self._CallMimic('/put.py?JaneDoe',
+                    http_host='proj2.your-app-id.appspot.com')
     # make sure it parsed the query arg correctly
     self.assertEquals('name: JaneDoe\n', self._body)
 
@@ -816,9 +814,11 @@ print 'value: ' + value
     self._AddFile('app.yaml', _GENERIC_APP_YAML)
 
     # put John and Jane using the same key
-    self._CallMimic('/put.py?JohnDoe', http_host='proj1.your-app-id.appspot.com')
+    self._CallMimic('/put.py?JohnDoe',
+                    http_host='proj1.your-app-id.appspot.com')
     self.assertEquals('value: JohnDoe\n', self._body)
-    self._CallMimic('/put.py?JaneDoe', http_host='proj2.your-app-id.appspot.com')
+    self._CallMimic('/put.py?JaneDoe',
+                    http_host='proj2.your-app-id.appspot.com')
     self.assertEquals('value: JaneDoe\n', self._body)
 
     self._CallMimic('/get.py', http_host='proj1.your-app-id.appspot.com')

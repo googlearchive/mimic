@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +46,7 @@ CONTROL_PATHS_REQUIRING_NAMESPACE = CONTROL_PATHS_REQUIRING_TREE + [
     CONTROL_PREFIX + '/index',
 ]
 
-RFC_1123_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"
+RFC_1123_DATE_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
 
 # URL path prefix for accessing a Python shell
 SHELL_PREFIX = '/_ah/shell'
@@ -150,7 +148,7 @@ class Tree(object):
   """
 
   def __init__(self, namespace='', access_key=None):
-    """Constructor
+    """Constructor.
 
     Args:
       namespace: the datastore/memcache namespace to use
@@ -186,7 +184,7 @@ class Tree(object):
     raise NotImplementedError
 
   def GetFileLastModified(self, path):
-    """Returns the time that a file was last updated. 
+    """Returns the time that a file was last updated.
 
     Args:
       path: The full path for the file.

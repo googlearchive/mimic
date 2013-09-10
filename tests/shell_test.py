@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +22,6 @@ import httplib
 # Import test_util first, to ensure python27 / webapp2 are setup correctly
 from tests import test_util
 
-from __mimic import common  # pylint: disable-msg=C6203
 from __mimic import datastore_tree
 from __mimic import shell
 

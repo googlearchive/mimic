@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2012 Google Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +24,6 @@ import re
 import shutil
 import sys
 import tempfile
-import time
 
 
 # Import test_util first, to ensure python27 / webapp2 are setup correctly
@@ -129,6 +126,7 @@ APP = webapp2.WSGIApplication([
 ], debug=True)
 _test_portal.APP = APP
 """
+
 
 class TestPortal(object):
   """A trivial class that lets target code exchange data with the test."""
@@ -372,7 +370,7 @@ _test_portal.files.append(__file__)
   def CheckPep302PackageAttributes(self, name):
     self.assertEquals('/target/foo/__init__.py', _test_portal.__file__)
     self.assertEquals(name, _test_portal.__name__)
-    #self.assertEquals(['/target/foo/'], _test_portal.__path__)
+    # self.assertEquals(['/target/foo/'], _test_portal.__path__)
     self.assertEquals(['/target'], _test_portal.__path__)
     loader = _test_portal.__loader__
     self.assertTrue(isinstance(loader, target_env._Loader))
@@ -713,8 +711,8 @@ logging.debug('running foo.py')
     a_file = file(__file__)
     self.assertTrue('testFile(self)' in a_file.read())
 
-  def doGetCwdTest(self, file_path, exp_cwd, os_call='os.getcwd()',
-                   exp_type=str):
+  def _DoGetCwdTest(self, file_path, exp_cwd, os_call='os.getcwd()',
+                    exp_type=str):
     self._env._TearDown()  # RunScript will set up the env
     self._tree.SetFile(file_path, """
 import os
@@ -728,13 +726,13 @@ logging.debug(%s)
     self.assertTrue(isinstance(msg, exp_type))
 
   def testGetCwdAtRoot(self):
-    self.doGetCwdTest('foo.py', '/target')
+    self._DoGetCwdTest('foo.py', '/target')
 
   def testGetCwdInFolder(self):
-    self.doGetCwdTest('dir/foo.py', '/target/dir')
+    self._DoGetCwdTest('dir/foo.py', '/target/dir')
 
   def testGetCwdu(self):
-    self.doGetCwdTest('foo.py', '/target', 'os.getcwdu()', unicode)
+    self._DoGetCwdTest('foo.py', '/target', 'os.getcwdu()', unicode)
 
   def testAccess(self):
     self._tree.SetFile('foo.txt', 'abc')
