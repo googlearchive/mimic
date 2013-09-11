@@ -664,6 +664,9 @@ logging.debug('running foo.py')
     self._tree.SetFile('foo.txt', 'abc')
     a_file = open('foo.txt')
     self.assertTrue(isinstance(a_file, file))
+    self.assertEquals('foo.txt', a_file.name)
+    self.assertEquals("""<open MimicFile 'foo.txt', mode 'r'>""",
+                      repr(a_file))
     self.assertEquals('abc', a_file.read())
     self.assertRaises(IOError, open, 'bar.txt')  # file doesn't exist
 

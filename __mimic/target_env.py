@@ -228,6 +228,8 @@ class MimicFile(object, StringIO.StringIO):
       return super(MimicFile, cls).__new__(cls)
 
   def __init__(self, filename, mode='r', bufsize=-1):
+    self.name = filename
+    self.mode = mode
     unused_bufsize = bufsize
     if mode not in _ALLOWED_FILE_MODES:
       raise IOError('Invalid mode: %s' % mode)
@@ -237,6 +239,10 @@ class MimicFile(object, StringIO.StringIO):
     if 'U' in mode:
       contents = _ConvertNewlines(contents)
     StringIO.StringIO.__init__(self, contents)
+
+  def __repr__(self):
+    return """<open {} '{}', mode '{}'>""".format(self.__class__.__name__,
+                                                  self.name, self.mode)
 
   def __enter__(self):
     # Nothing to setup
