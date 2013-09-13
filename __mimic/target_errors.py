@@ -1,5 +1,6 @@
 """Class for formatting target environment errors."""
 
+import cgi
 from collections import Counter
 import logging
 import os
@@ -121,24 +122,28 @@ def ExcInfoAsHtml():
     """Format a traceback line."""
 
     (filename, line_number, function_name, text) = entry
+    assert isinstance(line_number, int)
     if not filename.startswith('/'):
-      link = ("""<a onclick="navigate_to('{}', {})">{}</a>"""
-              .format(filename, line_number, filename))
-      filename = ('<span class="path">'
-                  '<span class="important">{}</span>'
-                  ' line <span class="line-number">{}</span>'
-                  ' in </span>'
-                  .format(link, line_number))
+      link_html = ("""<a onclick="navigate_to('{}', {})">{}</a>"""
+                   .format(cgi.escape(filename, quote=True), line_number,
+                           cgi.escape(filename)))
+      filename_html = ('<span class="path">'
+                       '<span class="important">{}</span>'
+                       ' line <span class="line-number">{}</span>'
+                       ' in </span>'
+                       .format(link_html, line_number))
     else:
       path = filename[len(common_prefix):]
-      filename = ('<span class="path">{}'
-                  '<span class="important">{}</span>'
-                  ' line <span class="line-number">{}</span>'
-                  ' in </span>'
-                  .format(common_prefix, path, line_number))
+      filename_html = ('<span class="path">{}'
+                       '<span class="important">{}</span>'
+                       ' line <span class="line-number">{}</span>'
+                       ' in </span>'
+                       .format(cgi.escape(common_prefix), cgi.escape(path),
+                               line_number))
     return ('<div class="traceback-line">{} {}</div>\n'
             '<div class="source">{}</div>\n'
-            .format(filename, function_name, text))
+            .format(filename_html, cgi.escape(function_name),
+                    cgi.escape(text)))
 
   exception_type, exception_value, tb = sys.exc_info()
   exception_only = traceback.format_exception_only(exception_type,
@@ -151,7 +156,7 @@ def ExcInfoAsHtml():
     html.append(format(FormatTracebackLine(entry, common_prefix)))
 
   html.append('<div class="exception-only">{}</div>'
-              .format(''.join(exception_only)))
+              .format(cgi.escape(''.join(exception_only))))
 
   html.append(_ERROR_HTML_EPILOGUE)
   return ''.join(html)
