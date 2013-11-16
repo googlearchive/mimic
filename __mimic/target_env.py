@@ -275,7 +275,7 @@ class _Finder(object):
   """
 
   def __init__(self, env, path):
-    assert path == _TARGET_ROOT
+    assert path == _TARGET_ROOT or path.startswith(_TARGET_PREFIX)
     self.env = env
     self.path = path
 
@@ -603,8 +603,8 @@ class TargetEnvironment(object):
             pass
 
   def _PathHook(self, path):
-    """A path hook for _TARGET_ROOT (see PEP 302)."""
-    if path == _TARGET_ROOT:
+    """A path hook for _TARGET_ROOT and sub directories (see PEP 302)."""
+    if path == _TARGET_ROOT or path.startswith(_TARGET_PREFIX):
       return _Finder(self, path)
     else:
       raise ImportError
@@ -622,7 +622,10 @@ class TargetEnvironment(object):
     Returns:
       A _Loader object if the module can be found, otherwise None.
     """
-    subdir = finder.path[len(_TARGET_ROOT):]
+    if finder.path == _TARGET_ROOT:
+      subdir = ''
+    else:
+      subdir = finder.path[len(_TARGET_PREFIX):]
     partial = os.path.join(subdir, fullname.replace('.', '/'))
     # check for a package
     file_path = partial + '/__init__.py'

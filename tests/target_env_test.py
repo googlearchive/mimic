@@ -602,6 +602,30 @@ logging.info('running __init__.py in foo/bar')
     self.assertEquals('running __init__.py in foo/bar',
                       handler.records[0].getMessage())
 
+  def testSysPathModifications(self):
+    self._env._TearDown()  # RunScript will set up the env
+    self._tree.SetFile('mylib/bar.py', """
+pass
+""")
+    self._tree.SetFile('foo.py', """
+import logging
+import os
+import sys
+
+app_root_dir = os.path.dirname(__file__)
+mylib_dir = os.path.join(app_root_dir, 'mylib')
+if mylib_dir not in sys.path:
+  sys.path.insert(0, mylib_dir)
+
+import bar
+logging.debug(bar.__file__)
+""")
+    handler = CollectingHandler()
+    self._env.RunScript('foo.py', handler)
+    self.assertEquals(1, len(handler.records))
+    self.assertEquals('/target/mylib/bar.py',
+                      handler.records[0].getMessage())
+
   def testSysModulesHasTwoEntriesForCurrentTopLevelScript(self):
     self._env._TearDown()  # RunScript will set up the env
     self._tree.SetFile('foo.py', """
