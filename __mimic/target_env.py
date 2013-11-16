@@ -340,6 +340,7 @@ class TargetEnvironment(object):
     self._tree = tree
     self._namespace = namespace
     self._active = False
+    self._saved_sys_path = None
     self._saved_sys_modules = None
     self._test_portal = test_portal
     self._saved_open = open
@@ -501,6 +502,7 @@ class TargetEnvironment(object):
     assert not self._active
     assert TargetEnvironment._instance is None
     self._saved_sys_modules = sys.modules.copy()
+    self._saved_sys_path = list(sys.path)
     sys.path.insert(0, _TARGET_ROOT)
     # The order of path_hooks shouldn't matter.  The only other hook is
     # going to be the zip importer, which shouldn't interfere with this.
@@ -520,7 +522,9 @@ class TargetEnvironment(object):
     linecache.clearcache()
     self._CleanupModules()
     # clean up sys.path, which must be modified in place (not replaced)
-    sys.path.remove(_TARGET_ROOT)
+    while len(sys.path):
+      sys.path.pop()
+    sys.path.extend(self._saved_sys_path)
     # clean up sys.path_importer_cache
     for p in sys.path_importer_cache.keys():  # pylint: disable-msg=C6401
       if p == _TARGET_ROOT:
