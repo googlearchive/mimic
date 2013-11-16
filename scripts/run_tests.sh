@@ -20,4 +20,4 @@ then
 else
   SDK_HOME=$BIN_DIR
 fi
-PYTHONPATH=$SDK_HOME python scripts/run_tests.py
+PYTHONPATH=$SDK_HOME python scripts/run_tests.py $*
