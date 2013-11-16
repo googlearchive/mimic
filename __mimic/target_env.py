@@ -125,10 +125,11 @@ class TargetAppError(Error):
 def _ResolvePath(path):
   """Normalize a path and determine if it belongs in the target file system.
 
-  Normalization always returns an absolute path with all occurences of '.'
+  Normalization always returns a relative path with all occurences of '.'
   and '..', as well as trailing '/' removed (similar to os.path.normpath).
-  In addition, if the path is a target path then it prefix of _TARGET_ROOT
-  will have been removed, leaving an absolute path into the target tree.
+  In addition, if the path is a target path then its _TARGET_ROOT or
+  _TARGET_PREFIX will have been removed, leaving a relative path into the target
+  tree.
 
   Examples:
     a/b          -> True,  'a/b'
@@ -527,7 +528,7 @@ class TargetEnvironment(object):
     sys.path.extend(self._saved_sys_path)
     # clean up sys.path_importer_cache
     for p in sys.path_importer_cache.keys():  # pylint: disable-msg=C6401
-      if p == _TARGET_ROOT:
+      if p == _TARGET_ROOT or p.startswith(_TARGET_PREFIX):
         del sys.path_importer_cache[p]
     sys.path_hooks.remove(self._PathHook)
     for p in self._patches:
