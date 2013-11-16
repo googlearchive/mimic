@@ -33,7 +33,7 @@ class DatastoreTreeTest(unittest.TestCase):
     self._tree.Clear()
     self._tree.SetFile('/foo', '123')
     self._tree.SetFile('/bar', '456')
-    self.time_created = datetime.datetime.now()
+    self.time_created = datetime.datetime.utcnow()
 
   def testIsMutable(self):
     self.assertTrue(self._tree.IsMutable())

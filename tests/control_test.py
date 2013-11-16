@@ -142,7 +142,7 @@ class ControlAppTest(unittest.TestCase):
 
   def testGetFileContents(self):
     self._tree.SetFile('foo.html', '123')
-    now = datetime.datetime.now()
+    now = datetime.datetime.utcnow()
     time_created = now.strftime(common.RFC_1123_DATE_FORMAT)
     self.RunWSGI('/_ah/mimic/file?path=foo.html')
     headers = {
@@ -156,7 +156,7 @@ class ControlAppTest(unittest.TestCase):
 
   def testGetFileContentsAllowedHost(self):
     self._tree.SetFile('foo.html', '123')
-    now = datetime.datetime.now()
+    now = datetime.datetime.utcnow()
     time_created = now.strftime(common.RFC_1123_DATE_FORMAT)
     common.config.ALLOWED_USER_CONTENT_HOSTS = ['allowed-host.com']
     self.RunWSGI('/_ah/mimic/file?path=foo.html', host='allowed-host.com')
@@ -182,7 +182,7 @@ class ControlAppTest(unittest.TestCase):
 
   def testGetFileContentsAlternateContentType(self):
     self._tree.SetFile('foo.css', 'pretty')
-    now = datetime.datetime.now()
+    now = datetime.datetime.utcnow()
     time_created = now.strftime(common.RFC_1123_DATE_FORMAT)
     self.RunWSGI('/_ah/mimic/file?path=foo.css')
     headers = {
