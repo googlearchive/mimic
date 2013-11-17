@@ -37,6 +37,7 @@ CONTROL_PATHS_REQUIRING_TREE = [
     CONTROL_PREFIX + '/clear',
     CONTROL_PREFIX + '/delete',
     CONTROL_PREFIX + '/dir',
+    CONTROL_PREFIX + '/zip',
     CONTROL_PREFIX + '/file',
     CONTROL_PREFIX + '/move',
 ]

@@ -19,6 +19,8 @@ import httplib
 import json
 import logging
 import os
+import StringIO
+import zipfile
 
 from . import common
 from . import composite_query
@@ -111,6 +113,26 @@ class _DirHandler(_TreeHandler):
              for path in paths]
     self.response.headers['Content-Type'] = 'application/json'
     self.response.out.write(common.config.JSON_ENCODER.encode(files))
+
+
+class _ZipHandler(_TreeHandler):
+  """Handler for downloading files as ZIP archive."""
+
+  def get(self):  # pylint: disable-msg=C6409
+    """Download the ZIP archive."""
+    paths = self._tree.ListDirectory(None)
+    buf = StringIO.StringIO()
+    zf = zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_DEFLATED)
+    for path in paths:
+      zf.writestr(path, self._tree.GetFileContents(path))
+    zf.close()
+    filename = (self.request.get('filename') or
+                '{}.zip'.format(self.app.config['namespace']))
+    content_disposition = 'attachment; filename="{}"'.format(filename)
+
+    self.response.headers['Content-Disposition'] = content_disposition
+    self.response.headers['Content-Type'] = 'application/zip'
+    self.response.write(buf.getvalue())
 
 
 class _FileHandler(_TreeHandler):
@@ -281,6 +303,7 @@ def MakeControlApp(tree, namespace, create_channel_fn=channel.create_channel):
       ('/clear', _ClearHandler),
       ('/delete', _DeleteHandler),
       ('/dir', _DirHandler),
+      ('/zip', _ZipHandler),
       ('/file', _FileHandler),
       ('/index', _IndexHandler),
       ('/log', _LogRequestHandler),
