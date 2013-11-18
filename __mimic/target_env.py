@@ -30,6 +30,7 @@ import stat
 import string
 import StringIO
 import sys
+import time
 import traceback
 
 from . import composite_query
@@ -832,9 +833,10 @@ class TargetEnvironment(object):
         # Similar to _IsStaticFile above, use the original path
         raise OSError(errno.ENOENT, _ACCESSING_SKIPPED_FILE_ERROR_MSG % path)
       elif self._tree.HasFile(resolved_path):
+        last_modified = self._tree.GetFileLastModified(resolved_path)
         return _MakeStatResult(_FILE_STAT_MODE,
                                self._tree.GetFileSize(resolved_path),
-                               self._tree.GetFileLastModified(resolved_path))
+                               time.mktime(last_modified.timetuple()))
       elif self._tree.HasDirectory(resolved_path):
         return _MakeStatResult(_DIR_STAT_MODE)
       else:

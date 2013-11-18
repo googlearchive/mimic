@@ -96,7 +96,7 @@ class DatastoreTree(common.Tree):
     return entity.updated
 
   def HasFile(self, path):
-    # root always exists, even if there are no files in the datastore
+    # root always exists, even if there are no files in the tree
     if path == '':  # pylint: disable-msg=C6403
       return True
     entity = _AhMimicFile.get_by_id(path, parent=self.root)
