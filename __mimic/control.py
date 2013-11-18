@@ -15,11 +15,11 @@
 """A simple web application to control Mimic."""
 
 
+import cStringIO
 import httplib
 import json
 import logging
 import os
-import StringIO
 import zipfile
 
 from . import common
@@ -121,7 +121,7 @@ class _ZipHandler(_TreeHandler):
   def get(self):  # pylint: disable-msg=C6409
     """Download the ZIP archive."""
     paths = self._tree.ListDirectory(None)
-    buf = StringIO.StringIO()
+    buf = cStringIO.StringIO()
     zf = zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_DEFLATED)
     for path in paths:
       zf.writestr(path, self._tree.GetFileContents(path))
