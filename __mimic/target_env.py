@@ -834,7 +834,7 @@ class TargetEnvironment(object):
       elif self._tree.HasFile(resolved_path):
         return _MakeStatResult(_FILE_STAT_MODE,
                                self._tree.GetFileSize(resolved_path),
-                               self._tree.GetFileLastModified(path))
+                               self._tree.GetFileLastModified(resolved_path))
       elif self._tree.HasDirectory(resolved_path):
         return _MakeStatResult(_DIR_STAT_MODE)
       else:
