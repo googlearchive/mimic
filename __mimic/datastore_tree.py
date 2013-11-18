@@ -64,7 +64,7 @@ class DatastoreTree(common.Tree):
 
   # pylint:disable-msg=unused-argument
   def __init__(self, namespace='', access_key=None):
-    super(DatastoreTree, self).__init__(namespace)
+    super(DatastoreTree, self).__init__(namespace, access_key)
     # Having a root entity key allows us to use ancestor queries for strong
     # consistency in the High Replication Datastore
     assert namespace is not None
