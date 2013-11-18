@@ -32,6 +32,7 @@ import StringIO
 import sys
 import time
 import traceback
+import webapp2
 
 from . import composite_query
 from . import target_errors
@@ -712,16 +713,8 @@ class TargetEnvironment(object):
     if wsgi_app_name:
       if hasattr(module, wsgi_app_name):
         wsgi_app = getattr(module, wsgi_app_name)
-        appengine_config = sys.modules.get('appengine_config') or {}
-        webapp_add_wsgi_middleware = getattr(appengine_config,
-                                             'webapp_add_wsgi_middleware', None)
-        if webapp_add_wsgi_middleware:
-          wsgi_app = webapp_add_wsgi_middleware(wsgi_app)
-        # install 500 error handler if app did not set one
-        error_handlers = getattr(wsgi_app, 'error_handlers', None)
-        if isinstance(error_handlers, dict):
-          if not error_handlers.get(500):
-            error_handlers[500] = target_errors.Wsgi500ErrorHandler
+        if isinstance(wsgi_app, webapp2.WSGIApplication):
+          wsgi_app = self.FixUpWebapp2WsgiApp(wsgi_app)
         run_wsgi_app(wsgi_app)
       else:
         module_name = self._FilePathToModuleName(loader.file_path)
@@ -731,6 +724,19 @@ class TargetEnvironment(object):
                                                        loader.file_path))
 
     return module
+
+  def FixUpWebapp2WsgiApp(self, app):
+    appengine_config = sys.modules.get('appengine_config') or {}
+    webapp_add_wsgi_middleware = getattr(appengine_config,
+                                         'webapp_add_wsgi_middleware', None)
+    if webapp_add_wsgi_middleware:
+      app = webapp_add_wsgi_middleware(app)
+    # install 500 error handler if app did not set one
+    error_handlers = getattr(app, 'error_handlers', None)
+    if isinstance(error_handlers, dict):
+      if not error_handlers.get(500):
+        error_handlers[500] = target_errors.Wsgi500ErrorHandler
+    return app
 
   def OpenExternalFile(self, filename, mode='r', bufsize=-1):
     """Return an opened file, or None if the filename is for a target file."""
