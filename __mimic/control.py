@@ -124,7 +124,9 @@ class _ZipHandler(_TreeHandler):
     buf = cStringIO.StringIO()
     zf = zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_DEFLATED)
     for path in paths:
-      zf.writestr(path, self._tree.GetFileContents(path))
+      last_modified = self._tree.GetFileLastModified(path)
+      zi = zipfile.ZipInfo(path, last_modified.timetuple()[:6])
+      zf.writestr(zi, self._tree.GetFileContents(path))
     zf.close()
     filename = (self.request.get('filename') or
                 '{}.zip'.format(self.app.config['namespace']))
