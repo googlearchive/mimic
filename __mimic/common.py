@@ -157,6 +157,13 @@ class Tree(object):
     """
     pass
 
+  @staticmethod
+  def _NormalizeDirectoryPath(path):
+    """Normalize non empty str to have a trailing '/'."""
+    if path and path[-1] != '/':
+      return path + '/'
+    return path
+
   def IsMutable(self):
     """Returns True if the tree can be modifed, False otherwise."""
     return False

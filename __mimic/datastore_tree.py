@@ -74,13 +74,6 @@ class DatastoreTree(common.Tree):
   def __repr__(self):
     return '<{0} root={1}>'.format(self.__class__.__name__, self.root)
 
-  @staticmethod
-  def _NormalizeDirectoryPath(path):
-    """Normalize non empty str to have a trailing '/'."""
-    if path and path[-1] != '/':
-      return path + '/'
-    return path
-
   def IsMutable(self):
     return True
 
