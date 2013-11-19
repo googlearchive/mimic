@@ -929,8 +929,10 @@ class TargetEnvironment(object):
       elif '.' in handler:
         # "native" WSGI handler
         left, right = handler.rsplit('.', 1)
-        file_path = '%s.py' % left.replace('.', '/')
+        file_path = '{}.py'.format(left.replace('.', '/'))
         self._wsgi_app_name = right
+        if not os.access(file_path, os.F_OK):
+          file_path = '{}/__init__.py'.format(left.replace('.', '/'))
       else:
         # Assume this is a package, like "foo/bar" or "foo/". Note that a
         # package that is just "foo" doesn't work and is validated in

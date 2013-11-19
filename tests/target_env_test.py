@@ -113,7 +113,7 @@ import webapp2
 import sys
 
 _test_portal.main = sys.modules['__main__']
-logging.debug('running main.py')
+logging.debug('running {}'.format(__file__))
 
 class MainHandler(webapp2.RequestHandler):
 
@@ -498,7 +498,69 @@ logging.debug('running foo.py')
 
     # check that logging handler was invoked
     self.assertEquals(2, len(handler.records))
-    self.assertEquals('running main.py', handler.records[0].getMessage())
+    self.assertEquals('running /target/main.py', handler.records[0].getMessage())
+    self.assertEquals('handling GET request', handler.records[1].getMessage())
+    # check logging cleanup
+    self.assertEquals(level, logging.getLogger().level)
+
+    self.assertEquals('Status: 200 OK\n'
+                      'Content-Type: text/html; charset=utf-8\n'
+                      'Cache-Control: no-cache\n'
+                      'Content-Length: 18\n\n'
+                      'main-response-body', self._output.getvalue())
+
+  def testWsgiAppInPackageModule(self):
+    self._env._TearDown()  # RunScript will set up the env
+    self._tree.SetFile('foo/bar.py', _WSGI_MAIN)
+    level = logging.getLogger().level
+    self.assertTrue(level > logging.DEBUG)  # should be true in a test
+    handler = CollectingHandler()
+
+    os.environ['REQUEST_METHOD'] = 'GET'
+    os.environ['PATH_INFO'] = '/foo.bar.APP'
+    self._env.RunScript('foo.bar.APP', handler)
+
+    module_main = _test_portal.main
+    self.assertEquals('__main__', module_main.__name__)
+    self.assertIsNotNone(module_main.APP)
+    self.assertEquals('/target/foo/bar.py', module_main.__file__)
+
+    self.assertEquals(module_main.APP, _test_portal.APP)
+
+    # check that logging handler was invoked
+    self.assertEquals(2, len(handler.records))
+    self.assertEquals('running /target/foo/bar.py', handler.records[0].getMessage())
+    self.assertEquals('handling GET request', handler.records[1].getMessage())
+    # check logging cleanup
+    self.assertEquals(level, logging.getLogger().level)
+
+    self.assertEquals('Status: 200 OK\n'
+                      'Content-Type: text/html; charset=utf-8\n'
+                      'Cache-Control: no-cache\n'
+                      'Content-Length: 18\n\n'
+                      'main-response-body', self._output.getvalue())
+
+  def testWsgiAppInImpliedPackage(self):
+    self._env._TearDown()  # RunScript will set up the env
+    self._tree.SetFile('foo/bar/__init__.py', _WSGI_MAIN)
+    level = logging.getLogger().level
+    self.assertTrue(level > logging.DEBUG)  # should be true in a test
+    handler = CollectingHandler()
+
+    os.environ['REQUEST_METHOD'] = 'GET'
+    os.environ['PATH_INFO'] = '/foo.bar.APP'
+    self._env.RunScript('foo.bar.APP', handler)
+
+    module_main = _test_portal.main
+    self.assertEquals('__main__', module_main.__name__)
+    self.assertIsNotNone(module_main.APP)
+    self.assertEquals('/target/foo/bar/__init__.py', module_main.__file__)
+
+    self.assertEquals(module_main.APP, _test_portal.APP)
+
+    # check that logging handler was invoked
+    self.assertEquals(2, len(handler.records))
+    self.assertEquals('running /target/foo/bar/__init__.py', handler.records[0].getMessage())
     self.assertEquals('handling GET request', handler.records[1].getMessage())
     # check logging cleanup
     self.assertEquals(level, logging.getLogger().level)
@@ -534,7 +596,7 @@ logging.debug('running foo.py')
     self.assertEquals(5, len(handler.records))
     self.assertEquals('running appengine_config.py with simple WSGI middleware',
                       handler.records[0].getMessage())
-    self.assertEquals('running main.py', handler.records[1].getMessage())
+    self.assertEquals('running /target/main.py', handler.records[1].getMessage())
     self.assertEquals('webapp_add_wsgi_middleware called',
                       handler.records[2].getMessage())
     self.assertEquals('handling GET request', handler.records[3].getMessage())
