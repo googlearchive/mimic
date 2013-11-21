@@ -212,7 +212,7 @@ class _IndexHandler(webapp.RequestHandler):
 
 
 class _LogRequestHandler(webapp.RequestHandler):
-  """Handler for realtime logging."""
+  """Handler for real time logging."""
 
   def __init__(self, request, response):
     """Initializes this request handler with the given Request and Response."""

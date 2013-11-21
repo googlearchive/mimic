@@ -53,7 +53,6 @@ var POST_MESSAGE = window.location.search.substr(1).split('&')
 var TOKEN = '%(token)s';
 
 
-
 maybe_log = function() {
   if (!DEBUG) {
     return;
@@ -68,6 +67,12 @@ maybe_log('new goog.appengine.Channel(token=', TOKEN, ') ->', channel);
 var INITIAL_RETRY_DELAY_MS = 500;
 
 var retry_delay_ms = INITIAL_RETRY_DELAY_MS;
+
+var remaining_connect_count = 3;
+
+var socket;
+
+var timeout;
 
 show_log_entry = function(entry) {
   var output = document.getElementById('output');
@@ -91,22 +96,23 @@ maybe_send = function(msg) {
 
 on_error = function(err) {
   // expect err.code and err.description to be set
-  // err.description valyes include 'Invalid+token.' and 'Token+timed+out.'
+  // err.description values include 'Invalid+token.' and 'Token+timed+out.'
   maybe_log('socket.onerror(', err, ')');
   maybe_send({'socket.onerror': err});
-  open_socket_with_backoff();
+  maybe_open_socket_with_backoff();
 };
 
-on_open = function(x) {
-  maybe_log('socket.onopen');
+on_open = function() {
+  maybe_log('socket.onopen()');
   maybe_send({'socket.onopen': true});
   retry_delay_ms = INITIAL_RETRY_DELAY_MS;
 };
 
-on_close = function(x) {
-  maybe_log('socket.onclose');
+on_close = function() {
+  maybe_log('socket.onclose()');
   maybe_send({'socket.onclose': true});
-  open_socket_with_backoff();
+  socket = undefined;
+  maybe_open_socket_with_backoff();
 };
 
 on_message = function(msg) {
@@ -119,9 +125,12 @@ on_message = function(msg) {
 };
 
 open_socket = function() {
+  if (socket) {
+    maybe_log('existing socket; will not open new socket');
+    return;
+  }
   maybe_log('channel.open()...');
-  var socket = channel.open();
-  maybe_log('got back socket=', socket);
+  socket = channel.open();
 
   socket.onopen = on_open;
   socket.onmessage = on_message;
@@ -129,8 +138,19 @@ open_socket = function() {
   socket.onclose = on_close;
 };
 
-open_socket_with_backoff = function() {
-  setTimeout(open_socket, retry_delay_ms);
+maybe_open_socket_with_backoff = function() {
+  if (timeout) {
+    return;
+  }
+  if (remaining_connect_count-- == 0) {
+    maybe_log('max open socket count reached');
+    return;
+  }
+  maybe_log('maybe_open_socket_with_backoff() with ' + retry_delay_ms + 'ms delay...');
+  timeout = setTimeout(function() {
+    open_socket();
+    timeout = undefined;
+  }, retry_delay_ms);
   // exponential backoff + fuzz factor
   retry_delay_ms = retry_delay_ms * (2 + Math.random());
 };
