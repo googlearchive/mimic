@@ -62,13 +62,15 @@ maybe_log = function() {
 
 // See https://developers.google.com/appengine/docs/python/channel/javascript
 var channel = new goog.appengine.Channel(TOKEN);
-maybe_log('new goog.appengine.Channel(token=', TOKEN, ') ->', channel);
+maybe_log('Channel(token="' + TOKEN + '")');
 
 var INITIAL_RETRY_DELAY_MS = 500;
 
 var retry_delay_ms = INITIAL_RETRY_DELAY_MS;
 
-var remaining_connect_count = 3;
+var MAX_SOCKET_CONNECT_ATTEMPTS = 3;
+
+var socket_connect_attempts = 0;
 
 var socket;
 
@@ -129,7 +131,11 @@ open_socket = function() {
     maybe_log('existing socket; will not open new socket');
     return;
   }
-  maybe_log('channel.open()...');
+  if (++socket_connect_attempts > MAX_SOCKET_CONNECT_ATTEMPTS) {
+    maybe_log('max open socket count ' + MAX_SOCKET_CONNECT_ATTEMPTS + ' reached');
+    return;
+  }
+  maybe_log('channel.open() attempt ' + socket_connect_attempts + '...');
   socket = channel.open();
 
   socket.onopen = on_open;
@@ -142,17 +148,13 @@ maybe_open_socket_with_backoff = function() {
   if (timeout) {
     return;
   }
-  if (remaining_connect_count-- == 0) {
-    maybe_log('max open socket count reached');
-    return;
-  }
-  maybe_log('maybe_open_socket_with_backoff() with ' + retry_delay_ms + 'ms delay...');
+  maybe_log('delaying open_socket() call for ' + retry_delay_ms + 'ms');
   timeout = setTimeout(function() {
     open_socket();
     timeout = undefined;
   }, retry_delay_ms);
   // exponential backoff + fuzz factor
-  retry_delay_ms = retry_delay_ms * (2 + Math.random());
+  retry_delay_ms = retry_delay_ms * 2 + Math.round(2000 * Math.random());
 };
 
 window.addEventListener('load', open_socket);
