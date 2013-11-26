@@ -283,6 +283,25 @@ class Tree(object):
     """
     raise NotImplementedError
 
+  def Files(self, path):
+    """Retrieve files in the tree with leading path.
+
+    Args:
+      path: The full path for the directory.
+
+    Returns:
+      List of (path, contents, last_updated) tuples representing all files in
+      the tree.
+    """
+    raise NotImplementedError
+
+  def PutFiles(self, files):
+    """Store files in the tree.
+
+    Args:
+      files: List of (path, contents, last_updated) tuples.
+    """
+    raise NotImplementedError
 
 def IsDevMode():
   """Return True for dev_appserver and tests, False for production."""

@@ -133,7 +133,7 @@ class DatastoreTree(common.Tree):
     ndb.delete_multi(keys)
 
   @ndb.transactional
-  def _SetFileChunks(self, path, contents):
+  def _SetFileChunks(self, path, contents, updated=None):
     """Put individual file chunks."""
     chunk_keys = []
     entities = []
@@ -153,7 +153,7 @@ class DatastoreTree(common.Tree):
       entities.append(_AhMimicChunk(key=chunk_key, contents=chunk))
       index += 1
     entities.append(_AhMimicFile(id=path, parent=self.root,
-                                 chunk_keys=chunk_keys))
+                                 chunk_keys=chunk_keys, updated=None))
     ndb.put_multi(entities)
 
   def SetFile(self, path, contents):
@@ -192,3 +192,37 @@ class DatastoreTree(common.Tree):
       subpath = tail.split('/', 1)[0]
       paths.add(subpath)
     return sorted(paths)
+
+  def GetFiles(self, path):
+    """Retrieve files in the tree with leading path.
+
+    Returns:
+      List of (path, contents, last_updated) tuples representing all files in
+      the tree.
+    """
+    path = self._NormalizeDirectoryPath(path)
+    # TODO: optimize by using a more structured tree representation
+    query = _AhMimicFile.query(ancestor=self.root)
+    files = query.fetch(batch_size=100, deadline=20)
+    if path is not None:
+      files = [f for f in files if f.key.id().startswith(path)]
+    # TODO: use tasklets to handle async fetching of chunks
+    return [(f.key.id(), f.GetContents(), f.updated) for f in files]
+
+  def PutFiles(self, files):
+    """Store files in the tree.
+
+    Args:
+      files: List of (path, contents, last_updated) tuples.
+    """
+    entities = []
+    for path, contents, updated in files:
+      if len(contents) > MAX_BYTES_FOR_ENTITY:
+        # TODO: use tasklets to handle async putting of chunks
+        _SetFileChunks(path=path, contents=contents, updated=updated)
+      else:
+        entity = _AhMimicFile(id=path, parent=self.root, contents=contents,
+                              updated=updated)
+        entities.append(entity)
+    ndb.put_multi(entities)
+
