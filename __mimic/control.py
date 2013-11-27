@@ -126,6 +126,7 @@ class _ZipHandler(_TreeHandler):
     for path in paths:
       last_modified = self._tree.GetFileLastModified(path)
       zi = zipfile.ZipInfo(path, last_modified.timetuple()[:6])
+      zi.external_attr = 0640 << 16L # -rw-r-----
       zf.writestr(zi, self._tree.GetFileContents(path))
     zf.close()
     filename = (self.request.get('filename') or
