@@ -21,6 +21,7 @@ manipulation of sys.path_hooks and sys.path (see PEP 302 for details).
 
 
 import errno
+# import gc
 import imp
 import linecache
 import logging
@@ -540,6 +541,21 @@ class TargetEnvironment(object):
 
     # prevent memory leaks due to cyclic references
     self._patches = None
+
+    # tmp = '\n\n'
+    # tmp += '\n\nGARBAGE:\n'
+    # gc.collect()
+
+    # tmp += '\n\nGARBAGE OBJECTS:\n'
+    # for x in gc.garbage:
+    #     s = str(x)
+    #     if len(s) > 80: s = s[:80]
+    #     tmp += '{}\n  {}'.format(type(x), s)
+    #     for p in dir(x):
+    #       tmp += '  {} = {}\n\n'.format(str(p), str(getattr(x, p)))
+
+    # tmp += '\n\n'
+    # logging.warn(tmp)
 
   # _CleanupModules must deal with a subtle problem related to the
   # encodings module.  The decode() function relies on a registry in
