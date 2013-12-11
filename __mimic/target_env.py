@@ -538,6 +538,9 @@ class TargetEnvironment(object):
     self._active = False
     TargetEnvironment._instance = None
 
+    # prevent memory leaks due to cyclic references
+    self._patches = None
+
   # _CleanupModules must deal with a subtle problem related to the
   # encodings module.  The decode() function relies on a registry in
   # the codecs module.  Individual encoders are implemented as
