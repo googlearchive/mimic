@@ -106,10 +106,18 @@ config = lib_config.register('mimic', {
 # supplement mimetypes.guess_type()'s limited guessing abilities
 _TEXT_MIME_TYPES = {
     'css': 'text/css',
+
     # *.dart uses *.js MIME Type for now
     'dart': 'text/javascript',
+
+    'go': 'text/x-go',
     'html': 'text/html',
     'ico': 'image/x-icon',
+
+    # .java is reported as x-java-source by mimetypes, which CodeMirror doesn't
+    # like, so we override
+    'java': 'text/x-java',
+
     'js': 'text/javascript',
     'jsp': 'application/x-jsp',
     'json': 'application/json',
