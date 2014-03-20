@@ -20,17 +20,18 @@ import httplib
 import json
 import logging
 import os
+import re
 import zipfile
 
 from . import common
 from . import composite_query
+from . import filesystem_tree
 
 from google.appengine.api import channel
 from google.appengine.ext import webapp
 
 
 _MAX_LOG_MESSAGE = 1024  # will keep the channel message under the 32K Limit
-
 
 class _TreeHandler(webapp.RequestHandler):
   """Base class for RequestHandlers that require a Tree object."""
@@ -115,27 +116,46 @@ class _DirHandler(_TreeHandler):
     self.response.out.write(common.config.JSON_ENCODER.encode(files))
 
 
+def prepare_zip_response_from_tree(response, tree, filename):
+  paths = tree.ListDirectory(None)
+  buf = cStringIO.StringIO()
+  zf = zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_DEFLATED)
+
+  basepath = re.sub(r'\.zip$', '', filename)
+
+  for path in paths:
+    last_modified = tree.GetFileLastModified(path)
+    zi = zipfile.ZipInfo(basepath + '/' + path,
+                         last_modified.timetuple()[:6])
+    zi.external_attr = 0640 << 16L # -rw-r-----
+    zf.writestr(zi, tree.GetFileContents(path))
+  zf.close()
+  content_disposition = 'attachment; filename="{}"'.format(filename)
+
+  response.headers['Content-Disposition'] = content_disposition
+  response.headers['Content-Type'] = 'application/zip'
+  response.write(buf.getvalue())
+
+
 class _ZipHandler(_TreeHandler):
   """Handler for downloading files as ZIP archive."""
 
   def get(self):  # pylint: disable-msg=C6409
-    """Download the ZIP archive."""
-    paths = self._tree.ListDirectory(None)
-    buf = cStringIO.StringIO()
-    zf = zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_DEFLATED)
-    for path in paths:
-      last_modified = self._tree.GetFileLastModified(path)
-      zi = zipfile.ZipInfo(path, last_modified.timetuple()[:6])
-      zi.external_attr = 0640 << 16L # -rw-r-----
-      zf.writestr(zi, self._tree.GetFileContents(path))
-    zf.close()
+    """Download the Zip archive."""
     filename = (self.request.get('filename') or
                 '{}.zip'.format(self.app.config['namespace']))
-    content_disposition = 'attachment; filename="{}"'.format(filename)
+    prepare_zip_response_from_tree(self.response, self._tree, filename)
 
-    self.response.headers['Content-Disposition'] = content_disposition
-    self.response.headers['Content-Type'] = 'application/zip'
-    self.response.write(buf.getvalue())
+
+class _ZipFromRepoHandler(webapp.RequestHandler):
+  """Request handler for serving zips of repos without a project."""
+
+  def get(self):  # pylint: disable-msg=C6409
+    """Download a repo as a Zip archive."""
+    tree = filesystem_tree.FilesystemTree(repo_path=self.request.get('repo'))
+    filename = (self.request.get('filename') or
+                re.sub(r'\W', '_', self.request.get('repo')))
+    prepare_zip_response_from_tree(self.response, tree, filename)
 
 
 class _FileHandler(_TreeHandler):
@@ -306,6 +326,7 @@ def MakeControlApp(tree, namespace, create_channel_fn=channel.create_channel):
       ('/clear', _ClearHandler),
       ('/delete', _DeleteHandler),
       ('/dir', _DirHandler),
+      ('/ziprepo', _ZipFromRepoHandler),
       ('/zip', _ZipHandler),
       ('/file', _FileHandler),
       ('/index', _IndexHandler),
