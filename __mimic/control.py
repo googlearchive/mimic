@@ -122,10 +122,19 @@ def prepare_zip_response_from_tree(response, tree, filename):
   zf = zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_DEFLATED)
 
   basepath = re.sub(r'\.zip$', '', filename)
+  if basepath.startswith('repos/'):
+    basepath = basepath[len('repos/'):]
 
   for path in paths:
+    if path.endswith('.playground'):
+      continue
+    if hasattr(tree, 'repo_path'):
+      subpath = path[len(tree.repo_path):].lstrip('/')
+    else:
+      subpath = path
+
     last_modified = tree.GetFileLastModified(path)
-    zi = zipfile.ZipInfo(basepath + '/' + path,
+    zi = zipfile.ZipInfo(basepath + '/' + subpath,
                          last_modified.timetuple()[:6])
     zi.external_attr = 0640 << 16L # -rw-r-----
     zf.writestr(zi, tree.GetFileContents(path))
@@ -155,7 +164,11 @@ class _ZipFromRepoHandler(webapp.RequestHandler):
     tree = filesystem_tree.FilesystemTree(repo_path=self.request.get('repo'))
     filename = (self.request.get('filename') or
                 re.sub(r'\W', '_', self.request.get('repo')))
-    prepare_zip_response_from_tree(self.response, tree, filename)
+    try:
+      prepare_zip_response_from_tree(self.response, tree, filename)
+    except IOError:
+      self.response.write('No such repo')
+      self.response.set_status(404)
 
 
 class _FileHandler(_TreeHandler):

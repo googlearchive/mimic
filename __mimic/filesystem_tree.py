@@ -26,28 +26,37 @@ class FilesystemTree(common.Tree):
     return False
 
   def GetFileContents(self, path):
-    with open(os.path.join(self.repo_path, path)) as fh:
+    path = os.path.join(self.repo_path, path)
+    with open(path) as fh:
       return fh.read()
 
   def GetFileSize(self, path):
-    return os.path.getsize(os.path.join(self.repo_path, path))
+    path = os.path.join(self.repo_path, path)
+    return os.path.getsize(path)
 
   def GetFileLastModified(self, path):
-    mtime = os.path.getmtime(os.path.join(self.repo_path, path))
+    path = os.path.join(self.repo_path, path)
+    mtime = os.path.getmtime(path)
     return datetime.datetime.fromtimestamp(mtime)
 
   def HasFile(self, path):
-    return os.path.isfile(os.path.join(self.repo_path, path))
+    path = os.path.join(self.repo_path, path)
+    return os.path.isfile(path)
 
   def HasDirectory(self, path):
-    return os.path.isdir(os.path.join(self.repo_path, path))
+    path = os.path.join(self.repo_path, path)
+    return os.path.isdir(path)
 
   def ListDirectory(self, path=None):
     result = []
     path = path or ''
-    for (dirname, dnames, fnames) in os.walk(
-            os.path.join(self.repo_path, path)):
-      result.extend(fnames)
+    path = os.path.join(self.repo_path, path)
+    if not os.path.isdir(path):
+      raise IOError()
+    for (dirname, dnames, fnames) in os.walk(path):
+      for fname in fnames:
+        full_repo_path = os.path.join(dirname, fname) 
+        result.append(full_repo_path[len(self.repo_path):])
     return result
 
   def GetFiles(self, path):
