@@ -116,14 +116,17 @@ class _DirHandler(_TreeHandler):
     self.response.out.write(common.config.JSON_ENCODER.encode(files))
 
 
-def prepare_zip_response_from_tree(response, tree, filename):
+def prepare_zip_response_from_tree(
+    response, tree, filename, use_basepath=False):
   paths = tree.ListDirectory(None)
   buf = cStringIO.StringIO()
   zf = zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_DEFLATED)
 
-  basepath = re.sub(r'\.zip$', '', filename)
-  if basepath.startswith('repos/'):
-    basepath = basepath[len('repos/'):]
+  basepath = ''
+  if use_basepath:
+    basepath = re.sub(r'\.zip$', '', filename) + '/'
+    if basepath.startswith('repos/'):
+      basepath = basepath[len('repos/'):]
 
   for path in paths:
     if path.endswith('.playground'):
@@ -134,7 +137,7 @@ def prepare_zip_response_from_tree(response, tree, filename):
       subpath = path
 
     last_modified = tree.GetFileLastModified(path)
-    zi = zipfile.ZipInfo(basepath + '/' + subpath,
+    zi = zipfile.ZipInfo(basepath + subpath,
                          last_modified.timetuple()[:6])
     zi.external_attr = 0640 << 16L # -rw-r-----
     zf.writestr(zi, tree.GetFileContents(path))
@@ -153,7 +156,9 @@ class _ZipHandler(_TreeHandler):
     """Download the Zip archive."""
     filename = (self.request.get('filename') or
                 '{}.zip'.format(self.app.config['namespace']))
-    prepare_zip_response_from_tree(self.response, self._tree, filename)
+    prepare_zip_response_from_tree(
+      self.response, self._tree, filename,
+      use_basepath=self.request.get('use_basepath') != 'false')
 
 
 class _ZipFromRepoHandler(webapp.RequestHandler):
@@ -165,7 +170,8 @@ class _ZipFromRepoHandler(webapp.RequestHandler):
     filename = (self.request.get('filename') or
                 re.sub(r'\W', '_', self.request.get('repo')))
     try:
-      prepare_zip_response_from_tree(self.response, tree, filename)
+      prepare_zip_response_from_tree(
+        self.response, tree, filename, use_basepath=True)
     except IOError:
       self.response.write('No such repo')
       self.response.set_status(404)
