@@ -131,13 +131,9 @@ def prepare_zip_response_from_tree(
   for path in paths:
     if path.endswith('.playground'):
       continue
-    if hasattr(tree, 'repo_path'):
-      subpath = path[len(tree.repo_path):].lstrip('/')
-    else:
-      subpath = path
 
     last_modified = tree.GetFileLastModified(path)
-    zi = zipfile.ZipInfo(basepath + subpath,
+    zi = zipfile.ZipInfo(basepath + path,
                          last_modified.timetuple()[:6])
     zi.external_attr = 0640 << 16L # -rw-r-----
     zf.writestr(zi, tree.GetFileContents(path))

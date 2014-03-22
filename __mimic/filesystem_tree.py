@@ -56,7 +56,15 @@ class FilesystemTree(common.Tree):
     for (dirname, dnames, fnames) in os.walk(path):
       for fname in fnames:
         full_repo_path = os.path.join(dirname, fname) 
-        result.append(full_repo_path[len(self.repo_path):])
+
+        # Truncate repo_path off the beginning of full_repo_path:
+        #   full_repo_path = 'foo/bar/baz'
+        #   self.repo_path = 'foo'
+        #   item_path = 'bar/baz'
+        item_path = full_repo_path[len(self.repo_path) + 1:]
+
+        result.append(item_path)
+
     return result
 
   def GetFiles(self, path):
