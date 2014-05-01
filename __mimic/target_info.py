@@ -67,13 +67,14 @@ _SUPPORTED_BUILTINS = set(['admin_redirect', 'appstats', 'datastore_admin',
 # regardless of the target's app.yaml file.  However it is important to allow
 # them in the app.yaml file in the event that the developer wants to enable
 # the library in production. See google/appengine/api/appinfo.py
-_SUPPORTED_LIBRARIES = set(['django', 'jinja2', 'lxml', 'markupsafe', 'numpy',
-                            'PIL', 'pycrypto', 'setuptools', 'webapp2', 'webob',
-                            'yaml'])
+_SUPPORTED_LIBRARIES = set(['django', 'endpoints', 'jinja2', 'lxml',
+                            'markupsafe', 'matplotlib', 'MySQLdb', 'numpy',
+                            'PIL', 'protorpc', 'PyAMF', 'pycrypto',
+                            'setuptools', 'ssl', 'webapp2', 'webob', 'yaml'])
 
 # Regular expression which determines 3rd party library versions via sys.path
 # We use this approach since not all libraries support __version__ or VERSION
-_SUPPORTED_LIBRARY_PATH_RE = re.compile(r'.*/(\w+)-([\d\.]+)$')
+_SUPPORTED_LIBRARY_PATH_RE = re.compile(r'.*/(\w+)-(\d[\d\.a-z]+)$')
 
 # List of regex matchers for sys.path entries
 _SUPPORTED_LIBRARY_SYS_PATH_MATCHERS = [_SUPPORTED_LIBRARY_PATH_RE.match(p)
@@ -390,9 +391,14 @@ def _ValidateLibrary(library):
   version = str(library.get('version'))
   available_version = str(_SUPPORTED_LIBRARY_VERSIONS[name])
   allowed_versions = ('latest', available_version)
+  # We allow users to specify 'latest' so as not to break lots of sample code
+  # However, users specifying 'latest' in their app.yaml will actually get
+  # whatever version of that library is explicitly specified in Mimic's
+  # own app.yaml, which may be 'latest' or may be some other version'
   if version not in allowed_versions:
-    raise ValidationError('app.yaml {!r} library version {!r} not one of {!r}'
-                          .format(name, version, allowed_versions))
+    # Note, error message does not reveal that 'latest' is an allowed value
+    raise ValidationError('app.yaml {!r} library version {!r} must be {!r}'
+                          .format(name, version, available_version))
 
 
 def _ValidateConfig(config):
