@@ -156,7 +156,7 @@ class _ZipHandler(_TreeHandler):
     safe_requested_filename = None
     if requested_filename:
       # Sanitize the filename, since it is used in the response.
-      # (An Inquisition scan noticed this.)
+      # (A security scan noticed this.)
       safe_requested_filename = re.sub(r'[^a-zA-Z0-9\.\-_]', '_',
                                        requested_filename)
 
@@ -199,8 +199,8 @@ class _FileHandler(_TreeHandler):
       self.error(httplib.NOT_FOUND)
 
       # Technically the error message is not served as HTML so we
-      # don't need to escape the parameter. But this showed up in an
-      # Inquisition scan so I'm fixing it.
+      # don't need to escape the parameter. But this showed up in a
+      # security scan so I'm fixing it.
       safe_path = cgi.escape(path)
 
       self.response.write('File does not exist: %s' % safe_path)
