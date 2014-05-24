@@ -15,6 +15,7 @@
 """A simple web application to control Mimic."""
 
 
+import cgi
 import cStringIO
 import httplib
 import json
@@ -150,7 +151,16 @@ class _ZipHandler(_TreeHandler):
 
   def get(self):  # pylint: disable-msg=C6409
     """Download the Zip archive."""
-    filename = (self.request.get('filename') or
+
+    requested_filename = self.request.get('filename')
+    safe_requested_filename = None
+    if requested_filename:
+      # Sanitize the filename, since it is used in the response.
+      # (An Inquisition scan noticed this.)
+      safe_requested_filename = re.sub(r'[^a-zA-Z0-9\.\-_]', '_',
+                                       requested_filename)
+
+    filename = (safe_requested_filename or
                 '{}.zip'.format(self.app.config['namespace']))
     prepare_zip_response_from_tree(
       self.response, self._tree, filename,
@@ -187,7 +197,13 @@ class _FileHandler(_TreeHandler):
     data = self._tree.GetFileContents(path)
     if data is None:
       self.error(httplib.NOT_FOUND)
-      self.response.write('File does not exist: %s' % path)
+
+      # Technically the error message is not served as HTML so we
+      # don't need to escape the parameter. But this showed up in an
+      # Inquisition scan so I'm fixing it.
+      safe_path = cgi.escape(path)
+
+      self.response.write('File does not exist: %s' % safe_path)
       return
     last_modified = self._tree.GetFileLastModified(path)
     last_modified_str = last_modified.strftime(common.RFC_1123_DATE_FORMAT)
