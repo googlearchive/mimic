@@ -219,7 +219,7 @@ class DatastoreTree(common.Tree):
     for path, contents, updated in files:
       if len(contents) > MAX_BYTES_FOR_ENTITY:
         # TODO: use tasklets to handle async putting of chunks
-        _SetFileChunks(path=path, contents=contents, updated=updated)
+        self._SetFileChunks(path=path, contents=contents, updated=updated)
       else:
         entity = _AhMimicFile(id=path, parent=self.root, contents=contents,
                               updated=updated)
